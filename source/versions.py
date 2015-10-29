@@ -38,9 +38,7 @@ class VersionRange():
 		self.max = None
 		self.max_inclusive = True
 		try:
-			for version in selections.split(','):
-				self.add_selection(version, conflict='error')
-				print('adding', version, 'status', str(self))
+			self.add_selections(selections, conflict='error')
 		except VersionRangeMismatch:
 			raise VersionRangeMismatch('"{0:s}" contains conflicting directives'.format(selections))
 
@@ -69,9 +67,14 @@ class VersionRange():
 				raise VersionRangeMismatch(msg)
 			else:
 				raise NotImplementedError('Unknown conflict mode "{0:}"'.format(conflict))
-		if max is not None or max_inclusive is not None:
+		if max_inclusive is not None and max is None:
+			max = self.max
+		if min_inclusive is not None and min is None:
+			min = self.min
+		#todo: problem: update from exclusive to inclusive (same value) shouldn't be possible as this expands the range
+		if max is not None:
 			""" New values have been provided. """
-			if self.max is None or max < self.max or (max == self.max and max_inclusive and not self.max_inclusive):
+			if self.max is None or max < self.max or (max == self.max and not max_inclusive and self.max_inclusive):
 				""" There is an old value, but ours is narrower, so we should update. """
 				empty_range = False
 				if self.min is not None:
@@ -83,22 +86,22 @@ class VersionRange():
 				if empty_range:
 					""" The values of max and min create an empty range; update the lower one (which is the minimum). """
 					print('max updated from', self.max, self.max_inclusive, 'to', max, max_inclusive, '(conflict mode)')  #todo
-					handle_conflict('Maximum {0:s} conflicts with minimum {1:s}; maximum (highest value) takes precedence.'
+					handle_conflict('Maximum {0:s} conflicts with minimum {1:s}; minimum (highest value) takes precedence.'
 						.format('{0:d}.{1:d}'.format(*max), '{0:d}.{1:d}'.format(*self.min)))
-					self.min = max
-					self.min_inclusive = True
+					self.max = self.min
+					self.min_inclusive = self.max_inclusive = True
 				else:
 					""" The value of max and min are not in conflict; simply update. """
 					print('max updated from', self.max, self.max_inclusive, 'to', max, max_inclusive)  #todo
-				self.max = max
-				self.max_inclusive = max_inclusive
+					self.max = max
+					self.max_inclusive = max_inclusive
 			else:
 				""" The old value was narrower, so we ignore this new value. (This is no cause for a warning). """
 				print('max NOT updated from', self.max, self.max_inclusive, 'to', max, max_inclusive)  #todo
-		if min is not None or min_inclusive is not None:
+		if min is not None:
 			""" New values have been provided. """
 			#todo: test this for max too
-			if self.min is None or min > self.min or (min == self.min and min_inclusive and not self.min_inclusive):
+			if self.min is None or min > self.min or (min == self.min and not min_inclusive and self.min_inclusive):
 				""" There is no old value, or there is an old value but ours is narrower, so we should update. """
 				empty_range = False
 				if self.max is not None:
@@ -106,7 +109,7 @@ class VersionRange():
 						empty_range = True
 					elif min == self.max:
 						print('  min == self.max', min, self.max)
-						if not (min_inclusive and (max_inclusive or self.max_inclusive)):
+						if not (min_inclusive and (max_inclusive or self.max_inclusive)):  #todo: doubtful line
 							print('  min_inclusive or (max_inclusive or self.max_inclusive)', min_inclusive, max_inclusive, self.max_inclusive)
 							empty_range = True
 				if empty_range:
@@ -126,6 +129,10 @@ class VersionRange():
 				print('min NOT updated from', self.min, self.min_inclusive, 'to', min, min_inclusive)  #todo
 		#todo: this still accepts >1.0,<1.1 which cannot match; leave it like that?
 
+	def add_selections(self, selections, conflict = 'warning'):
+		for version in selections.split(','):
+			self.add_selection(version, conflict=conflict)
+
 	def add_selection(self, selection, conflict = 'warning'):
 		"""
 		Restrict the range given a selection string
@@ -137,9 +144,12 @@ class VersionRange():
 		selection = selection.replace(' ', '').replace('=.', '=0.')
 		if not selection:
 			return
+		if selection.count(','):
+			raise Exception(('Version string "{0:s}" is incorrect. Perhaps you\'re trying to add a combined one; ' +
+				'you should use add_selections for that').format(selection))
 		if selection.count('.') > 1:
-			raise VersionFormatError('Version string "{0:s}" is incorrect. Perhaps it contains a version longer than 2 numbers' +
-				'(e.g. "3.14)" which is intentionally not supported. Version numbers beyond the second are for bugfixes only.'.format(selection))
+			raise VersionFormatError(('Version string "{0:s}" is incorrect. Perhaps it contains a version longer than 2 numbers ' +
+				'(e.g. "3.14)" which is intentionally not supported. Version numbers beyond the second are for bugfixes only.').format(selection))
 		regex = r'^[><=]=?(\d+|\*)(?:\.(\d*|\*))?$'
 		if not match(regex, selection):
 			raise VersionFormatError('Version string "{0:s}" not properly formatted according to "{1:s}".'.format(selection, regex))
@@ -216,6 +226,13 @@ class VersionRange():
 			if not getattr(self, property) == getattr(other, property):
 				return False
 		return True
+
+	def __and__(self, other):
+		if not type(self) is type(other):
+			raise NotImplementedError('can only take intersection with other {0:s} objects, not {1:s}.'
+			    .format(str(type(self)), str(type(other))))
+		raise NotImplementedError('intersection')
+
 
 	def tuple_to_str(self, tup):
 		if tup[1] is None:

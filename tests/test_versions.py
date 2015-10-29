@@ -45,19 +45,78 @@ def test_range_raw_checks():
 
 def test_range_checks():
 	with raises(VersionRangeMismatch):
-		VersionRange('<=2.2').add_selection('>2.3', conflict='error')  #todo: it doesn't even detect the conflict
+		VersionRange('<=2.2').add_selection('>2.3', conflict='error')
 	with raises(VersionRangeMismatch):
 		VersionRange('>2.3,<=2.2')
+	with raises(VersionRangeMismatch):
+		VersionRange('<=2.2,>2.3')
 	with raises(VersionRangeMismatch):
 		VersionRange('==2.*,<=1.9')
 	#todo
 
 
+def test_range_noconflict():
+	vr = VersionRange('>4.2,<5')
+	vr.add_selection('==4.3', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 3), max=(4, 3), min_inclusive=True, max_inclusive=True)
+	vr = VersionRange('>4.2,<5')
+	vr.add_selection('==4.*', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 2), max=(5, 0), min_inclusive=False, max_inclusive=False)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selection('<4.5', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 0), max=(4, 5), min_inclusive=False, max_inclusive=False)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selection('>=4.5', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 5), max=(5 ,0), min_inclusive=True, max_inclusive=False)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selections('>4.2,<4.8', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 2), max=(4, 8), min_inclusive=True, max_inclusive=True)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selections('>=4.2,<=4.8', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 2), max=(4, 8), min_inclusive=True, max_inclusive=True)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selections('>4.5,<5.5', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 5), max=(5, 0), min_inclusive=False, max_inclusive=False)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selections('>=2.5,<=4.8', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 0), max=(4, 8), min_inclusive=False, max_inclusive=True)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selections('>3.15,<=5.0', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 3), max=(4, 3), min_inclusive=True, max_inclusive=True)
+
+
 def test_range_conflict_resolution():
-	range1=VersionRange('>2.3')
-	range1.add_selection('<=2.2', conflict='silent')  # todo: how should this be handled? it should pick the first version above 2.3, so max shouldn't be None
-	print('&&&', range1)
-	assert range1 == VersionRange.raw(min=(2, 3), max=None, min_inclusive=True, max_inclusive=False)
+	vr = VersionRange('>2.3')
+	vr.add_selection('<=2.2', conflict='silent')
+	print('&&&', vr)
+	assert vr == VersionRange.raw(min=(2, 3), max=None, min_inclusive=False)
+	vr = VersionRange('<=2.2')
+	vr.add_selection('>2.3', conflict='silent')
+	assert vr == VersionRange.raw(min=(2, 3), max=None, min_inclusive=False)
+	vr = VersionRange('>=2.3')
+	vr.add_selection('<2.2', conflict='silent')
+	assert vr == VersionRange.raw(min=(2, 3), max=None, min_inclusive=True)
+	vr = VersionRange('<2.2')
+	vr.add_selection('>=2.3', conflict='silent')
+	assert vr == VersionRange.raw(min=(2, 3), max=None, min_inclusive=True)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selection('<3.0', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 0), max=(5, 0), min_inclusive=False, max_inclusive=False)
+	vr = VersionRange('>4.0,<5')
+	vr.add_selection('>=5.0', conflict='silent')
+	assert vr == VersionRange.raw(min=(5, 0), max=None, min_inclusive=True)
+	vr = VersionRange('>=4.0,<=5')
+	vr.add_selection('<=3.0', conflict='silent')
+	assert vr == VersionRange.raw(min=(4, 0), max=(5, 0), min_inclusive=False, max_inclusive=False)
+	vr = VersionRange('>=4.0,<=5')
+	vr.add_selection('>5.0', conflict='silent')
+	assert vr == VersionRange.raw(min=(5, 0), max=None, min_inclusive=False)
+
+
+def test_intersection():
+	pass
+	#VersionRange('>=4.0,<=6.0') & VersionRange('>=3.0,<=5')
+	#todo
 
 
 def test_make_range():
