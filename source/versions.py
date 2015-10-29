@@ -37,28 +37,30 @@ class VersionRange():
 		self.min_inclusive = True
 		self.max = None
 		self.max_inclusive = True
-		for version in selections.split(','):
-			try:
-				self.add_selection(version, conflict = 'error')
-			except VersionRangeMismatch:
-				raise VersionRangeMismatch('"{0:s}" contains conflicting directives'.format(selections))
+		try:
+			for version in selections.split(','):
+				self.add_selection(version, conflict='error')
+				print('adding', version, 'status', str(self))
+		except VersionRangeMismatch:
+			raise VersionRangeMismatch('"{0:s}" contains conflicting directives'.format(selections))
 
 	@classmethod
-	def raw(cls, min = None, max = None, min_inclusive = True, max_inclusive = True, conflict = 'warning'):
-		inst = cls('')
+	def raw(cls, min=None, max=None, min_inclusive=True, max_inclusive=True, conflict='warning'):
+		inst=cls('')
 		assert type(min_inclusive) is bool and type(max_inclusive) is bool
 		assert (min is None or type(min) is tuple) and (max is None or type(max) is tuple)
 		assert (min is None or len(min) == 2) and (max is None or len(max) == 2)
-		inst.update_values(min = min, max = max, min_inclusive = min_inclusive, max_inclusive = max_inclusive)
+		inst.update_values(min=min, max=max, min_inclusive=min_inclusive, max_inclusive=max_inclusive)
 		return inst
 
-	def update_values(self, min = None, max = None, min_inclusive = None, max_inclusive = None, conflict = 'warning'):
+	def update_values(self, min=None, max=None, min_inclusive=None, max_inclusive=None, conflict='warning'):
 		"""
 		Update the boundaries, handling possible conflicts.
 
 		:param conflict: What to do in case of failure: 'silent', 'warning' or 'error'.
 		"""
 		def handle_conflict(msg):
+			print('handling', conflict, 'for', msg)
 			if conflict == 'ignore':
 				return
 			elif conflict == 'warning':
@@ -71,6 +73,7 @@ class VersionRange():
 			""" New values have been provided. """
 			if self.max is None:
 				""" There is no old value, so simply update (inclusive doesn't matter in this case). """
+				print('max updated from', self.max, self.max_inclusive, 'to', max, max_inclusive, '(direct)')  #todo
 				self.max = max
 				self.max_inclusive = max_inclusive
 			elif max < self.max or (max == self.max and max_inclusive and not self.max_inclusive):
@@ -100,6 +103,7 @@ class VersionRange():
 			""" New values have been provided. """
 			if self.min is None:
 				""" There is no old value, so simply update (inclusive doesn't matter in this case). """
+				print('min updated from', self.min, self.min_inclusive, 'to', min, min_inclusive, '(direct)')  #todo
 				self.min = min
 				self.min_inclusive = min_inclusive
 			elif min > self.min or (min == self.min and min_inclusive and not self.min_inclusive):
@@ -113,13 +117,18 @@ class VersionRange():
 							conflict = True
 				if conflict:
 					""" The values of max and min create an empty range; update the lower one (which is the minimum). """
+					print('min updated from', self.min, self.min_inclusive, 'to', min, min_inclusive, '(conflict mode)')  #todo
 					handle_conflict('Minimum {0:d} conflicts with maximum {1:d}; minimum (highest value) takes precedence.'.format(min, self.max))
 					self.max = min
 					self.max_inclusive = True
+				else:
+					print('min updated from', self.min, self.min_inclusive, 'to', min, min_inclusive)  #todo
 				""" Update to the target values independent of conflict """
 				self.max = max
 				self.max_inclusive = max_inclusive
-
+			else:
+				print('min NOT updated from', self.min, self.min_inclusive, 'to', min, min_inclusive)  #todo
+		#todo: this still accepts >1.0,<1.1 which cannot match; leave it like that?
 
 	def add_selection(self, selection, conflict = 'warning'):
 		"""
@@ -128,20 +137,14 @@ class VersionRange():
 		:param selection: A single selection (without comma), like '>=1.3'.
 		:param conflict: What to do in case of failure: 'silent', 'warning' or 'error'.
 		"""
-		# def handle_single_digit(digit, lower_open = False, upper_open = False):
-		# 	if not lower_open:
-		# 		self.min = (digit, 0)
-		# 		self.min_inclusive = True
-		# 	if not upper_open:
-		# 		self.max = (digit + 1, 0)
-		# 		self.max_inclusive = False
-		selection = selection.replace(' ', '')
+		print('BEFORE add_selection', selection, str(self))
+		selection = selection.replace(' ', '').replace('=.', '=0.')
 		if not selection:
 			return
 		if selection.count('.') > 1:
 			raise VersionFormatError('Version string "{0:s}" is incorrect. Perhaps it contains a version longer than 2 numbers' +
 				'(e.g. "3.14)" which is intentionally not supported. Version numbers beyond the second are for bugfixes only.'.format(selection))
-		regex = r'^[><=]=?\d+(?:\.\d*)?$'
+		regex = r'^[><=]=?(\d+|\*)(?:\.(\d*|\*))?$'
 		if not match(regex, selection):
 			raise VersionFormatError('Version string "{0:s}" not properly formatted according to "{1:s}".'.format(selection, regex))
 		if selection.startswith('='):
@@ -152,38 +155,46 @@ class VersionRange():
 				if not found:
 					raise VersionFormatError('Version "{0:s}" not understood; * can appear as "==*" or "==nr.*" only.'.format(selection))
 				major = int(found[0])
-				self.update_values(min = (major, 0), max = (major + 1, 0), min_inclusive = True, max_inclusive = False, conflict = conflict)
+				self.update_values(min=(major, 0), max=(major + 1, 0), min_inclusive=True, max_inclusive=False, conflict=conflict)
 			else:
 				found = findall(r'^==?(\d+)(?:\.(\d*))?$', selection)
 				if not found:
 					raise VersionFormatError('Version "{0:s}" not understood; expecting "==nr" or "==nr.nr".'.format(selection))
 				major, minor = intify(found[0])
 				if minor is None:
-					self.update_values(min = (major, 0), max = (major + 1, 0), min_inclusive = True, max_inclusive = False, conflict = conflict)
+					self.update_values(min=(major, 0), max=(major + 1, 0), min_inclusive=True, max_inclusive=False, conflict=conflict)
 				else:
-					self.update_values(min = (major, minor), max = (major, minor), min_inclusive = True, max_inclusive = True, conflict = conflict)
+					self.update_values(min=(major, minor), max=(major, minor), min_inclusive=True, max_inclusive=True, conflict=conflict)
 		if selection.startswith('>'):
 			incl = selection.startswith('>=')
 			found = findall(r'^>=?(\d+)(?:\.(\d*))?$', selection)
 			if not found:
 				raise VersionFormatError('Version "{0:s}" not understood; expecting "nr" or "nr.nr" after the > or >=.'.format(selection))
 			major, minor = intify(found[0])
-			if minor:
-				self.update_values(min = (major, minor), min_inclusive = incl, conflict = conflict)
-			else:
+			if minor is None:
 				if incl:
-					self.update_values(min = (major, 0), min_inclusive = True, conflict = conflict)
+					self.update_values(min=(major, 0), min_inclusive=True, conflict=conflict)
 				else:
-					self.update_values(min = (major + 1), min_inclusive = False, conflict = conflict)
+					self.update_values(min=(major + 1, 0), min_inclusive=True, conflict=conflict)
+			else:
+				self.update_values(min=(major, minor), min_inclusive=incl, conflict=conflict)
 		if selection.startswith('<'):
 			incl = selection.startswith('<=')
 			found = findall(r'^<=?(\d+)(?:\.(\d*))?$', selection)
 			if not found:
 				raise VersionFormatError('Version "{0:s}" not understood; expecting "nr" or "nr.nr" after the < or <=.'.format(selection))
 			major, minor = intify(found[0])
-			""" Note that this is easier than for > because <7 is <7.0 whereas >7 is >=8.0"""
-			self.update_values(max = (major, minor or 0), max_inclusive = incl, conflict = conflict)
-		#todo: version numbers longer than 2
+			""" Note that this is different from > because
+				1)  <7 is <7.0 whereas >7 is >=8.0
+				2)  <=7 is <8.0 whereas >7 is >=8.0 """
+			if minor is None:
+				if incl:
+					self.update_values(max=(major + 1, 0), max_inclusive=False, conflict=conflict)
+				else:
+					self.update_values(max=(major, 0), max_inclusive=False, conflict=conflict)
+			else:
+				self.update_values(max=(major, minor), max_inclusive=incl, conflict=conflict)
+		print('add_selection', selection, str(self))
 
 	def choose(self, versions):
 		"""
@@ -218,19 +229,29 @@ class VersionRange():
 			if self.max is None:
 				return '==*'
 			return '=={0:s}'.format(self.tuple_to_str(self.max))
+		if self.min and self.max:
+			if self.min == (self.max[0], self.max[1] - 1):
+				if self.min_inclusive:
+					return '=={0:s}'.format(self.tuple_to_str(self.min))
+				if self.max_inclusive:
+					return '=={0:s}'.format(self.tuple_to_str(self.max))
+			if self.min == (self.max[0], self.max[1] - 2):
+				if not self.min_inclusive and not self.max_inclusive:
+					return '=={0:s}'.format(self.tuple_to_str((self.max[0], self.max[1] - 1)))
+		parts = []
 		if self.min is not None:
-			repr = ['>']
+			parts.append('>')
 			if self.min_inclusive:
-				repr.append('=')
-			repr.append(self.tuple_to_str(self.min))
+				parts.append('=')
+			parts.append(self.tuple_to_str(self.min))
 			if self.max is not None:
-				repr.append(',')
+				parts.append(',')
 		if self.max is not None:
-			repr = ['<']
+			parts.append('<')
 			if self.max_inclusive:
-				repr.append('=')
-			repr.append(self.tuple_to_str(self.max))
-		return ''.join(repr)
+				parts.append('=')
+			parts.append(self.tuple_to_str(self.max))
+		return ''.join(parts)
 
 
 def parse_dependency(txt):
