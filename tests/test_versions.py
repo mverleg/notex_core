@@ -1,9 +1,11 @@
 
 from pytest import raises
-from versions import parse_dependency, VersionRange, VersionFormatError
+from versions import parse_dependency, VersionRange, VersionFormatError, VersionRangeMismatch
 
 
 #todo: check that selection order doesn't matter
+#todo: test some adjecent values 1.0 / 1.1 etc
+
 
 def test_range_equality():
 	range1 = VersionRange.raw(min=(1, 3), max=(2, 0), min_inclusive=True, max_inclusive=False)
@@ -42,11 +44,11 @@ def test_range_raw_checks():
 
 
 def test_range_checks():
-	with raises(AssertionError):
+	with raises(VersionRangeMismatch):
 		VersionRange('<=2.2').add_selection('>2.3', conflict='error')  #todo: it doesn't even detect the conflict
-	with raises(AssertionError):
+	with raises(VersionRangeMismatch):
 		VersionRange('>2.3,<=2.2')
-	with raises(AssertionError):
+	with raises(VersionRangeMismatch):
 		VersionRange('==2.*,<=1.9')
 	#todo
 
@@ -104,6 +106,7 @@ def test_range_repr():
 	assert str(VersionRange('>=2.2,<2.3')) == '==2.2'
 	assert str(VersionRange('>2.2,<=2.3')) == '==2.3'
 	assert str(VersionRange('>2.2,<2.4')) == '==2.3'
+	assert str(VersionRange('<3.0,>1.0')) == '>1.0,<3.0'
 	#todo
 
 

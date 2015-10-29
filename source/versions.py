@@ -61,34 +61,30 @@ class VersionRange():
 		"""
 		def handle_conflict(msg):
 			print('handling', conflict, 'for', msg)
-			if conflict == 'ignore':
+			if conflict == 'silent':
 				return
 			elif conflict == 'warning':
 				warning(msg)
 			elif conflict == 'error':
 				raise VersionRangeMismatch(msg)
 			else:
-				raise NotImplementedError('Unknown conflict mode "{0:s}"'.format(conflict))
+				raise NotImplementedError('Unknown conflict mode "{0:}"'.format(conflict))
 		if max is not None or max_inclusive is not None:
 			""" New values have been provided. """
-			if self.max is None:
-				""" There is no old value, so simply update (inclusive doesn't matter in this case). """
-				print('max updated from', self.max, self.max_inclusive, 'to', max, max_inclusive, '(direct)')  #todo
-				self.max = max
-				self.max_inclusive = max_inclusive
-			elif max < self.max or (max == self.max and max_inclusive and not self.max_inclusive):
+			if self.max is None or max < self.max or (max == self.max and max_inclusive and not self.max_inclusive):
 				""" There is an old value, but ours is narrower, so we should update. """
-				conflict = False
+				empty_range = False
 				if self.min is not None:
 					if max < self.min:
-						conflict = True
+						empty_range = True
 					elif max == self.min:
-						if max_inclusive or self.min_inclusive:
-							conflict = True
-				if conflict:
+						if not (max_inclusive and (min_inclusive or self.min_inclusive)):
+							empty_range = True
+				if empty_range:
 					""" The values of max and min create an empty range; update the lower one (which is the minimum). """
 					print('max updated from', self.max, self.max_inclusive, 'to', max, max_inclusive, '(conflict mode)')  #todo
-					handle_conflict('Maximum {0:d} conflicts with minimum {1:d}; maximum (highest value) takes precedence.'.format(max, self.min))
+					handle_conflict('Maximum {0:s} conflicts with minimum {1:s}; maximum (highest value) takes precedence.'
+						.format('{0:d}.{1:d}'.format(*max), '{0:d}.{1:d}'.format(*self.min)))
 					self.min = max
 					self.min_inclusive = True
 				else:
@@ -101,31 +97,31 @@ class VersionRange():
 				print('max NOT updated from', self.max, self.max_inclusive, 'to', max, max_inclusive)  #todo
 		if min is not None or min_inclusive is not None:
 			""" New values have been provided. """
-			if self.min is None:
-				""" There is no old value, so simply update (inclusive doesn't matter in this case). """
-				print('min updated from', self.min, self.min_inclusive, 'to', min, min_inclusive, '(direct)')  #todo
-				self.min = min
-				self.min_inclusive = min_inclusive
-			elif min > self.min or (min == self.min and min_inclusive and not self.min_inclusive):
-				""" There is an old value, but ours is narrower, so we should update. """
-				conflict = False
+			#todo: test this for max too
+			if self.min is None or min > self.min or (min == self.min and min_inclusive and not self.min_inclusive):
+				""" There is no old value, or there is an old value but ours is narrower, so we should update. """
+				empty_range = False
 				if self.max is not None:
 					if min > self.max:
-						conflict = True
+						empty_range = True
 					elif min == self.max:
-						if min_inclusive or self.max_inclusive:
-							conflict = True
-				if conflict:
+						print('  min == self.max', min, self.max)
+						if not (min_inclusive and (max_inclusive or self.max_inclusive)):
+							print('  min_inclusive or (max_inclusive or self.max_inclusive)', min_inclusive, max_inclusive, self.max_inclusive)
+							empty_range = True
+				if empty_range:
 					""" The values of max and min create an empty range; update the lower one (which is the minimum). """
 					print('min updated from', self.min, self.min_inclusive, 'to', min, min_inclusive, '(conflict mode)')  #todo
-					handle_conflict('Minimum {0:d} conflicts with maximum {1:d}; minimum (highest value) takes precedence.'.format(min, self.max))
+					print('min, self.max', min, self.max)
+					handle_conflict('Minimum {0:s} conflicts with maximum {1:s}; minimum (highest value) takes precedence.'
+						.format('{0:d}.{1:d}'.format(*min), '{0:d}.{1:d}'.format(*self.max)))
 					self.max = min
 					self.max_inclusive = True
 				else:
 					print('min updated from', self.min, self.min_inclusive, 'to', min, min_inclusive)  #todo
 				""" Update to the target values independent of conflict """
-				self.max = max
-				self.max_inclusive = max_inclusive
+				self.min = min
+				self.min_inclusive = min_inclusive
 			else:
 				print('min NOT updated from', self.min, self.min_inclusive, 'to', min, min_inclusive)  #todo
 		#todo: this still accepts >1.0,<1.1 which cannot match; leave it like that?
@@ -164,7 +160,9 @@ class VersionRange():
 				if minor is None:
 					self.update_values(min=(major, 0), max=(major + 1, 0), min_inclusive=True, max_inclusive=False, conflict=conflict)
 				else:
+					print('yolo')
 					self.update_values(min=(major, minor), max=(major, minor), min_inclusive=True, max_inclusive=True, conflict=conflict)
+					print('yolo done')
 		if selection.startswith('>'):
 			incl = selection.startswith('>=')
 			found = findall(r'^>=?(\d+)(?:\.(\d*))?$', selection)
