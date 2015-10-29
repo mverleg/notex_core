@@ -1,0 +1,70 @@
+
+Approach:
+- It's hard to plan everything now, perhaps I should just get started on a quick draft, and then throw out the parts that don't work well.
+- Probably need a compiler
+  - Also use Angular processing?
+  - Use any template language?
+- Should the document source be a valid-ish document? Display in any way correctly?
+- Should users ever need javascript?
+- Figures will not be positioned automatically, is that a good thing?
+- Come up with a name
+-
+
+
+Ingredients:
+- Citations
+- References
+- Equations (mathjax)
+- Images
+- Printable
+- Compiler
+- Single-file flag
+- Local vs cdn flag
+- (Online editor)
+- Add-on manager
+- Includes (split files)
+- Fonts, Kerning etc
+- Client features (print, search, index, notes...)
+- Paged vs flow
+- Themes (styles & templates)
+- graphs (d3, c3)
+- Index/ToC
+- // Comments
+
+
+Considerations:
+- What about figure/equation/table numbering? CSS can do numbering but no references, so do this in code.
+    Including 'only number referenced figures'? And ofc. make clickable links.
+- I should list latex complaints to make sure they're actually solved.
+- Make all references (fig ref, footnote, citation) clickable/hoverable to reveal the full target so you never have to search.
+- Should citations still use tex? http://tex.stackexchange.com/questions/11516/alternatives-to-bibtex2html (add hrefs though, this is the 21st century)?
+    A custom templating engine would work quite well for bibliography.
+- Should self-contained version of document with multiple chapters be a SPA?
+    It's pretty much the only way; should there be url updates and everything?
+- addons installed in addons/name/v1.0 where 1.0.2 is expected to be just bugfixes for 1.0.1 (and so the latest 1.0.* is always used)
+    They're hosted on a server anyway so might as well use that as a cdn.
+- Security warning about blindly pasting documents on your website.
+- How do themes (book template, crimson style) relate to display modes (print version, paged vs flow, ..)
+    Also night mode, contrast mode, ...
+- Remember document position using url hash as well as cookie
+- What to do with versions? Have compiler & addon versions, with the option of using old ones?
+    It'll still look different in different browsers though
+- Might be good to create a few javascript events:
+    http://www.kirupa.com/html5/custom_events_js.htm
+- Should there be pdf versions? Or is printable & standalone enough?
+- Include source in output by default? Sensitive comments...
+
+
+Resources:
+- print http://stackoverflow.com/questions/1960939/disabling-browser-print-options-headers-footers-margins-from-page
+- page slitting: http://stackoverflow.com/questions/27354789/how-can-i-split-html-content-into-pages-that-fit-the-screen
+- kerning: http://blog.typekit.com/2014/02/05/kerning-on-the-web/
+- inline images have size limit: http://www.websiteoptimization.com/speed/tweak/inline-images/
+- tags: https://developer.mozilla.org/en/docs/Web/HTML/Element
+-
+
+Apps:
+- bootstrap, angular, etc
+- old browser warnings
+-
+

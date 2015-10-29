@@ -1,0 +1,17 @@
+{
+  "name": "demo",
+  "version": "1.0",
+  "description": "Doesn't do much!",
+  "url": "https://github.com/mverleg",
+  "requirements": {
+    "bootstrap": ">2.0"
+  },
+  "style": [
+    "style.css"
+  ],
+  "script": [
+    "script.js"
+  ],
+  "credits": "credits.txt",
+  "license": "Apache 2.0"
+}
