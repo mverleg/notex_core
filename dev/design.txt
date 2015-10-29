@@ -53,6 +53,9 @@ Considerations:
     http://www.kirupa.com/html5/custom_events_js.htm
 - Should there be pdf versions? Or is printable & standalone enough?
 - Include source in output by default? Sensitive comments...
+- How can modules e.g. replace tags? There must be a compiler hook somewhere
+- Add (Iced)CoffeeScript and Stylus (& sass etc?) support
+-
 
 
 Resources:
