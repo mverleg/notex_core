@@ -12,5 +12,13 @@
   "ignore": [
     "*.pyc",
     "*~"
+  ],
+  "default_static": [
+    "*.css",
+    "*.js",
+    "*.html"
+  ],
+  "default_flags": [
+    "--clean"
   ]
 }
