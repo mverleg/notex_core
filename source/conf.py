@@ -25,6 +25,7 @@ class Settings():
 		return dirname(realpath(__file__))
 
 	def get_defaults(self):
+		#todo: maybe hardcode defaults, it feels too changeable now...
 		with open(join(self.get_code_dir(), 'notex_config_defaults.json'), 'r') as fh:
 			defaults = load(fp=fh, object_pairs_hook=OrderedDict)
 		try:

@@ -34,7 +34,7 @@ def parse(args):
 		help='Print all configuration values including defaults to the screen.')  # todo: this one should also be available at notexpm
 	parser.add_argument('--make_conf', dest='make_conf', action='store_true',
 		help='Make a default configuration file.')  # todo: this one should also be available at notexpm
-	opts = parser.parse_args(args)
+	opts = parser.parse_args(args + list(settings.default_flags)) #todo: show a message if default flags are in use
 	if opts.show_conf:  # todo: move this code somewhere else
 		print(settings.get_config_string())
 	if opts.make_conf:
@@ -43,7 +43,7 @@ def parse(args):
 			stderr.write('Configuration file already exists at "{0:s}"; not making any changes.\n'.format(conf_path))
 			exit()
 		else:
-			conf = settings.get_defaults()
+			conf = settings.get_defaults()  #todo: use a more minimal subset of defaults as initial config file
 			makedirs(dirname(conf_path), exist_ok=True)
 			with open(conf_path, 'w+') as fh:
 				dump(conf, fp=fh, indent=2, sort_keys=False)
