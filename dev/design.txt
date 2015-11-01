@@ -1,38 +1,61 @@
 
+NoTex: make a few good example documents (article, letter, CV ...) so people can 1) see how to structure such a document 2) find examples of specific tag usage
+NoTex: make a website where people can preview themes (styles), and maybe see fixed demo templates for other addons (probably seperate [sub]domain because of XSS vulnerability). Also make example of Chinese text.
+Notex: package loading, for optimal control of order and versions, should proceed as: go over the direct requirements and add those to a list, then in that order one by one, recursively insert the package's dependency before the actual package, unless it was seen before, in which case you go back and update the versions range. This way the correct recursive structure is obtained, but with option for overruling order from the main file. Should main file package versions also overrule later ones? Probably so, but maybe recommend against using it needlessly, as using below-requirement versions quite likely causes trouble. Add a command to list all packages in said order, and another to list only the explicitly specified packages. It seemd the package manager will not have installation, it just installs missing packages during document compilation. Don't make a complicated system for keeping track of which packages are old; it's easy enough to just nuke the directory and things will be redownloaded when needed. Is that acceptable behaviour? If people don't lile it they can manually uninstall stuff (uninstall command). Have an rc file which contains the package servers (multiple possible) and the install directory. Add commands that can be run independent from whatever project you're working on.
+Notex: packages csn be uploaded with some command or can be automatically pulled from git https. Config file contains 'include' (default [*]) or 'exclude' options to limit files. Have namespaces where people can upload their stuff freely, and some moderation policy for global namespace packages.
+
+
+
 Approach:
+- Realize that the main difference between tex and notex is that content is free-flowing
 - It's hard to plan everything now, perhaps I should just get started on a quick draft, and then throw out the parts that don't work well.
 - Probably need a compiler
   - Also use Angular processing?
   - Use any template language?
 - Should the document source be a valid-ish document? Display in any way correctly?
 - Should users ever need javascript?
-- Figures will not be positioned automatically, is that a good thing?
+- Figures, tables etc will not be positioned automatically, is that a good thing?
+- Page breaking, adding footnotes, etc will be difficult
 - Come up with a name
 -
 
 
-Ingredients:
-- Citations
-- References
-- Equations (mathjax)
-- Images
-- Printable
+Ingredients core:
 - Compiler
-- Single-file flag
-- Local vs cdn flag
-- (Online editor)
-- Add-on manager
 - Includes (split files)
-- Fonts, Kerning etc
 - Client features (print, search, index, notes...)
 - Paged vs flow
 - Themes (styles & templates)
 - graphs (d3, c3)
 - Index/ToC
-- // Comments
+- Variables
+- Review mode
+- // /* Comments */
+Ingredients in separate apps:
+- Add-on manager
+- Fonts, Kerning etc
+Ingredients in addons:
+- Citations
+- References (id, #)
+- Equations (mathjax)
+- Images
+- Printable
+Ingredients probably in addons:
+- Single-file flag
+- Local vs cdn flag
+- Optimize flag
+Maybe never:
+- Online editor
+-
 
 
 Considerations:
+- Package(s) to convert common LaTeX \commands to html
+- Package(s) to convert common mistakes http://line25.com/articles/10-html-entity-crimes-you-really-shouldnt-commit
+- $\gamma$ for variables and in equations, &gamma; or γ in text or names [isn't this kind of annoying? maybe entities work in mathjax?]
+- Mathjax at compile time or in client? It's pretty slow (so compile) but behaves differently in different browsers (so client)
+- Should people use <article>, <section>? Or should they use <chapter> which I then convert? Or use just headers and add articles automatically?
+- Use JS strict mode, but not for entire files https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode
 - What about figure/equation/table numbering? CSS can do numbering but no references, so do this in code.
     Including 'only number referenced figures'? And ofc. make clickable links.
 - I should list latex complaints to make sure they're actually solved.
@@ -55,6 +78,9 @@ Considerations:
 - Include source in output by default? Sensitive comments...
 - How can modules e.g. replace tags? There must be a compiler hook somewhere
 - Add (Iced)CoffeeScript and Stylus (& sass etc?) support
+- Use <aside> for things that can be removed without reducing the meaning of main content
+- Recommended to split packages into small subpackages (using the main one just to require others), so that tags can be individually turned off. Or use options I guess.
+- Soup compiler only, people can easily add Angular directives by themselves (even through the compiler)
 -
 
 
