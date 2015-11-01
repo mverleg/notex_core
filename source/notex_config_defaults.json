@@ -1,0 +1,16 @@
+{
+  "__comment__": "path should ",
+  "path": ":",
+  "package_sources": {
+    "default": {
+      "url": "http://localhost.markv.nl:8000/",
+      "directory": "~/.notex_packages",
+      "auto_install": true,
+      "__comment__": "removed add_to_path, check_updates and check_cleanup"
+    }
+  },
+  "ignore": [
+    "*.pyc",
+    "*~"
+  ]
+}
