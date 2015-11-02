@@ -12,9 +12,10 @@
 		<style media="all">
 			.page
 			{
+				position: relative;
 				display: inline-block;
 				box-sizing: border-box;  /* Exclude padding from width. */
-				padding: 4em;
+				padding: 6em 7em;
 				width: 210.0mm;  /* A4 which is narrower than USA letter */
 				height: 279.4mm;  /* USA letter which is shorter than A4 */
 			}
@@ -29,6 +30,27 @@
 			{
 				width: 215.9mm;
 				height: 279.4mm;
+			}
+
+			.page-header, .page-footer
+			{
+				position: absolute;
+				left: 0;
+				right: 0;
+				margin: 0;
+				border: 0;
+				padding: 2em 3em;
+			}
+
+			.page-header
+			{
+				top: 0;
+			}
+
+			.page-footer
+			{
+				bottom: 0;
+				text-align: right;
 			}
 
 			.page-hidden
@@ -63,16 +85,23 @@
 			{
 				background-color: white;
 				border: 1px solid darkgray;
-				box-shadow: .2cm .2cm 1cm 0 gray;
-				margin: .5vmax;
+				box-shadow: 0 0 0.5cm 0 gray;
+				margin: .25cm;
 			}
 		</style>
 
 		<style type="text/css" media="print">
 			@page
 			{
-				size: portrait;   /* auto is the current printer page size */
 				margin: 0mm;  /* this affects the margin in the printer settings */
+				size: A4 portrait;  /* todo should be dynamic A4 vs letter */
+			}
+
+			.page
+			{
+				border: 1px solid transparent;
+				page-break-after: always;
+				page-break-inside: avoid;
 			}
 
 			.page-hidden
@@ -102,26 +131,18 @@
 					</section>
 				</div>
 				<div class="page">
-					<section>
-						<header>
-							<h1>My document</h1>
-							<p>Subtitle should be in p</p>
-						</header>
-					</section>
+					<aside class="page-header">Hello world!</aside>
 					<section>
 						{% include 'lorum.html' %}
 					</section>
+					<aside class="page-footer">page 2 of 3</aside>
 				</div>
 				<div class="page">
-					<section>
-						<header>
-							<h1>My document</h1>
-							<p>Subtitle should be in p</p>
-						</header>
-					</section>
+					<aside class="page-header">Hello world!</aside>
 					<section>
 						{% include 'lorum.html' %}
 					</section>
+					<aside class="page-footer">page 3 of 3</aside>
 				</div>
 				<div class="page page-hidden">
 					Nothing here

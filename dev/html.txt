@@ -18,6 +18,7 @@
 
 - print http://stackoverflow.com/questions/1960939/disabling-browser-print-options-headers-footers-margins-from-page
 - page splitting: http://stackoverflow.com/questions/27354789/how-can-i-split-html-content-into-pages-that-fit-the-screen
+- especially orphans and widows: http://www.w3.org/TR/CSS21/page.html#page-breaks
 
 - Favicons
 
