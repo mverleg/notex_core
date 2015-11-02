@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" moznomarginboxes>
+	<head>
+		<meta charset="UTF-8">
+		<title>My document</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css" integrity="sha384-aUGj/X2zp5rLCbBxumKTCw2Z50WgIr1vs/PFN4praOTvYXWlVyh2UtNUU0KAUhAX" crossorigin="anonymous">
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
+
+		<style media="all">
+			.page
+			{
+				display: inline-block;
+				box-sizing: border-box;  /* Exclude padding from width. */
+				padding: 4em;
+				width: 210.0mm;  /* A4 which is narrower than USA letter */
+				height: 279.4mm;  /* USA letter which is shorter than A4 */
+			}
+
+			.A4 .page
+			{
+				width: 210.0mm;
+				height: 297.4mm;
+			}
+
+			.letter .page
+			{
+				width: 215.9mm;
+				height: 279.4mm;
+			}
+
+			.page-hidden
+			{
+				visibility: hidden;
+			}
+
+			.page:nth-child(odd):last-child
+			{
+				display: none;
+			}
+		</style>
+
+		<style media="not print">
+			html, body
+			{
+				background-color: lightgray;
+			}
+
+			.pages
+			{
+				display: flex;
+				flex-flow: row wrap;
+				justify-content: center;
+				align-content: flex-start;
+				padding: 1vmax;
+				max-width: 600mm;
+				margin: auto;
+			}
+
+			.page
+			{
+				background-color: white;
+				border: 1px solid darkgray;
+				box-shadow: .2cm .2cm 1cm 0 gray;
+				margin: .5vmax;
+			}
+		</style>
+
+		<style type="text/css" media="print">
+			@page
+			{
+				size: portrait;   /* auto is the current printer page size */
+				margin: 0mm;  /* this affects the margin in the printer settings */
+			}
+
+			.page-hidden
+			{
+				display: none;
+			}
+
+			body
+			{
+				background-color: white;
+				border: solid 1px white; /* not sure why but this prevents an empty page at the end */
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<article class="A4 pages">
+				<div class="page"> <!-- are pages really articles? they're not seperate entities -->
+					<section>
+						<header>
+							<h1>My document</h1>
+							<p>Subtitle should be in p</p>
+						</header>
+					</section>
+					<section>
+						{% include 'lorum.html' %}
+					</section>
+				</div>
+				<div class="page">
+					<section>
+						<header>
+							<h1>My document</h1>
+							<p>Subtitle should be in p</p>
+						</header>
+					</section>
+					<section>
+						{% include 'lorum.html' %}
+					</section>
+				</div>
+				<div class="page">
+					<section>
+						<header>
+							<h1>My document</h1>
+							<p>Subtitle should be in p</p>
+						</header>
+					</section>
+					<section>
+						{% include 'lorum.html' %}
+					</section>
+				</div>
+				<div class="page page-hidden">
+					Nothing here
+				</div>
+			</article>
+		</main>
+	</body>
+</html>
+
+

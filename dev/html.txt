@@ -1,0 +1,24 @@
+
+- How sectioning and outlining should work: http://www.w3.org/TR/html5/sections.html#outlines
+  more info https://developer.mozilla.org/en-US/docs/Sections_and_Outlines_of_an_HTML5_document
+
+- I'm probably going to NOT omit all the tags that aren't required, contrary to Google's recommendation. Size isn't that important.
+
+- Now hgroup is obbsolete again?
+    http://html5doctor.com/howto-subheadings/
+
+- It's not entirely clear what html5 best practices are, there are many style guides but I've not found an automatic style checker tool (especially: which tags can be omitted or left unclosed?)
+
+- Add (Iced)CoffeeScript and Stylus (& sass etc?) support
+- Use <aside> for things that can be removed without reducing the meaning of main content
+
+- Maybe the outliner should be in javascript, for future live updates? Doesn't seem like there's a Python version anyway
+
+- Note that no browsers use the sectioning information, but it's still quite suitable for notex with a little css etc, e.g. for easy ToC
+
+- print http://stackoverflow.com/questions/1960939/disabling-browser-print-options-headers-footers-margins-from-page
+- page splitting: http://stackoverflow.com/questions/27354789/how-can-i-split-html-content-into-pages-that-fit-the-screen
+
+- Favicons
+
+

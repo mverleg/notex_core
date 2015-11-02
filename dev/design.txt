@@ -17,7 +17,6 @@ Approach:
 Ingredients core:
 - Compiler
 - Includes (split files)
-- Client features (print, search, index, notes...)
 - Paged vs flow
 - Themes (styles & templates)
 - graphs (d3, c3)
@@ -29,6 +28,7 @@ Ingredients in separate apps:
 - Add-on manager
 - Fonts, Kerning etc
 - Documentation & examples
+- Style guide warnings
 Ingredients in addons:
 - Citations
 - References (id, #)
@@ -48,7 +48,8 @@ Maybe never:
 Considerations:
 - Package(s) to convert common LaTeX \commands to html
 - Package(s) to convert common mistakes http://line25.com/articles/10-html-entity-crimes-you-really-shouldnt-commit
-- $\gamma$ for variables and in equations, &gamma; or γ in text or names [isn't this kind of annoying? maybe entities work in mathjax?]
+- $\gamma$ for variables and in equations, γ in text or names [isn't this kind of annoying? maybe γ work in mathjax?]
+  Google recommends against using entities except the ones that have special html meaning like <>&
 - Mathjax at compile time or in client? It's pretty slow (so compile) but behaves differently in different browsers (so client)
 - Should people use <article>, <section>? Or should they use <chapter> which I then convert? Or use just headers and add articles automatically?
 - Use JS strict mode, but not for entire files https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode
@@ -73,8 +74,6 @@ Considerations:
 - Should there be pdf versions? Or is printable & standalone enough?
 - Include source in output by default? Sensitive comments...
 - How can modules e.g. replace tags? There must be a compiler hook somewhere
-- Add (Iced)CoffeeScript and Stylus (& sass etc?) support
-- Use <aside> for things that can be removed without reducing the meaning of main content
 - Recommended to split packages into small subpackages (using the main one just to require others), so that tags can be individually turned off. Or use options I guess.
 - Soup compiler only, people can easily add Angular directives by themselves (even through the compiler)
 - Make a few good example documents (article, letter, CV ...) so people can 1) see how to structure such a document 2) find examples of specific tag usage
@@ -82,8 +81,6 @@ Considerations:
 
 
 Resources:
-- print http://stackoverflow.com/questions/1960939/disabling-browser-print-options-headers-footers-margins-from-page
-- page slitting: http://stackoverflow.com/questions/27354789/how-can-i-split-html-content-into-pages-that-fit-the-screen
 - kerning: http://blog.typekit.com/2014/02/05/kerning-on-the-web/
 - inline images have size limit: http://www.websiteoptimization.com/speed/tweak/inline-images/
 - tags: https://developer.mozilla.org/en/docs/Web/HTML/Element
