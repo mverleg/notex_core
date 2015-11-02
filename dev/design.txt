@@ -46,6 +46,7 @@ Maybe never:
 
 
 Considerations:
+- Perhaps package order as the only control over compile order is insufficient, it's very critical.
 - Package(s) to convert common LaTeX \commands to html
 - Package(s) to convert common mistakes http://line25.com/articles/10-html-entity-crimes-you-really-shouldnt-commit
 - $\gamma$ for variables and in equations, γ in text or names [isn't this kind of annoying? maybe γ work in mathjax?]
