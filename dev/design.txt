@@ -11,7 +11,7 @@ Approach:
 - Figures, tables etc will not be positioned automatically, is that a good thing?
 - Page breaking, adding footnotes, etc will be difficult
 - Come up with a name
-- 
+-
 
 
 Ingredients core:
@@ -35,6 +35,7 @@ Ingredients in addons:
 - Equations (mathjax)
 - Images
 - Printable
+- Default style (readability research)
 Ingredients probably in addons:
 - Single-file flag
 - Local vs cdn flag
