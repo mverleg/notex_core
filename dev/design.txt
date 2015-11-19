@@ -47,6 +47,8 @@ Maybe never:
 
 
 Considerations:
+- Make a tool that recompiles on page refresh to show the latest version
+- Easily make internal links to (sub)chapters
 - Split notex cmd into commands? Like django does? (Runserver, migrate,...). Necessary for notexpm, maybe not for compiler, or do it later...
 - package compiler to class
 - jinja package
@@ -85,6 +87,8 @@ Considerations:
 - Recommended to split packages into small subpackages (using the main one just to require others), so that tags can be individually turned off. Or use options I guess.
 - Soup compiler only, people can easily add Angular directives by themselves (even through the compiler)
 - Make a few good example documents (article, letter, CV ...) so people can 1) see how to structure such a document 2) find examples of specific tag usage
+- PGF/TikZ support? (convert to svg perhaps, but seems not trivial)
+- Make a document compile flag that outputs the settings to get suitable images for MPL, Matlab, etc. (font-type and -size, img width, maybe even colors).
 -
 
 

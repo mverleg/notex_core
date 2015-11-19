@@ -19,6 +19,7 @@
     "*.html"
   ],
   "default_flags": [
-    "--clean"
+    "--tempdir /tmp/notex",
+    "--bla"
   ]
 }

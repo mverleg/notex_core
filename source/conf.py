@@ -3,7 +3,7 @@ from collections import OrderedDict
 from json import load, dumps
 from logging import warning
 from os import getenv
-from os.path import join, dirname, realpath
+from os.path import join, dirname, realpath, abspath
 from appdirs import user_config_dir
 
 
@@ -16,13 +16,32 @@ class Settings():
 	def __init__(self):
 		self.config = self.get_user_config()
 
+	@classmethod
+	def get_version(cls):
+		"""
+			The version of the compiler.
+		"""
+		with open(join(cls.get_base_dir(), 'dev', 'VERSION')) as fh:
+			return fh.read()
+
+	@classmethod
+	def get_base_dir(cls):
+		"""
+			Get the base directory of notex_core.
+		"""
+		return dirname(cls.get_code_dir())
+
+	@staticmethod
+	def get_code_dir():
+		"""
+			Get the source directory of notex_core.
+		"""
+		return dirname(realpath(__file__))
+
 	def get_user_config(self):
 		config = self.get_defaults()
 		config.update(self.load_user_config_file())
 		return config
-
-	def get_code_dir(self):
-		return dirname(realpath(__file__))
 
 	def get_defaults(self):
 		#todo: maybe hardcode defaults, it feels too changeable now...
