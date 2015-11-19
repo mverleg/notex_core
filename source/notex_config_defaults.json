@@ -17,9 +17,5 @@
     "*.css",
     "*.js",
     "*.html"
-  ],
-  "default_flags": [
-    "--tempdir /tmp/notex",
-    "--bla"
   ]
 }

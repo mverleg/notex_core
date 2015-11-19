@@ -1,5 +1,11 @@
 
 
+How important is setting a specific compiler version?
+A: not at all: output looks different in different browsers anyway, why not different html?
+B: should be available for corner-cases: you can install an older version of compiler through pip
+C: important: should be available as compiler flag and/or document property (so cannot be tied to pip version)
+
+
 Approach:
 - Realize that the main difference between tex and notex is that content is free-flowing
 - It's hard to plan everything now, perhaps I should just get started on a quick draft, and then throw out the parts that don't work well.
