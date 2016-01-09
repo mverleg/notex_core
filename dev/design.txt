@@ -4,6 +4,9 @@ How important is setting a specific compiler version?
 A: not at all: output looks different in different browsers anyway, why not different html?
 B: should be available for corner-cases: you can install an older version of compiler through pip
 C: important: should be available as compiler flag and/or document property (so cannot be tied to pip version)
+*: Maybe the compiler should also be a package, those things already have parallel versions. Have the compiler build the command line arguments too then?
+
+And I probably want logic in input files like if and loop, even if only for 20% of cases. Perhaps use Jinja. Should that also be a package?
 
 
 Approach:
@@ -53,6 +56,8 @@ Maybe never:
 
 
 Considerations:
+- If I want footnotes etc visible on mouseover, then it should happen at compile-time and not with css
+- Require a kind of doctype (which could also hold the version?), to distinguish notex input from normal html (output or otherwise).
 - Make a tool that recompiles on page refresh to show the latest version
 - Easily make internal links to (sub)chapters
 - Split notex cmd into commands? Like django does? (Runserver, migrate,...). Necessary for notexpm, maybe not for compiler, or do it later...
@@ -95,6 +100,8 @@ Considerations:
 - Make a few good example documents (article, letter, CV ...) so people can 1) see how to structure such a document 2) find examples of specific tag usage
 - PGF/TikZ support? (convert to svg perhaps, but seems not trivial)
 - Make a document compile flag that outputs the settings to get suitable images for MPL, Matlab, etc. (font-type and -size, img width, maybe even colors).
+- Package for color coding of code
+- Maybe also a package for running code (pass a lot of context)
 -
 
 
