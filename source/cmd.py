@@ -1,5 +1,5 @@
 
-from argparse import ArgumentParser, FileType, SUPPRESS
+from argparse import ArgumentParser, SUPPRESS
 from json import dump
 from os import makedirs
 from os.path import dirname, exists
@@ -16,7 +16,7 @@ def parse(args):
 	cmd_parsers = top_parser.add_subparsers(dest='action', help='What do you want NoTeX to do? Use `action --help` to get info about a specific action, e.g. compile --help')
 
 	compile = cmd_parsers.add_parser('compile', help='Compile your NoTex input documents to presentable web documents (HTML/css/javascript...)')
-	live = cmd_parsers.add_parser('live', help='Instead of compiling to a file, run a simpleweb server to display your document and recompile automatically on reload (not for use in production).')
+	live = cmd_parsers.add_parser('live', help='Instead of compiling to a file, run a simple web server to display your document and recompile automatically on reload (not for use in production).')
 	clean = cmd_parsers.add_parser('clean', help='Clean up temporary files.')
 	show_conf = cmd_parsers.add_parser('show_conf', help='Print all configuration values including defaults to the screen.') # todo: this one should also be available at notexpm
 	make_conf = cmd_parsers.add_parser('make_conf', help='Make a default configuration file.') # todo: this one should also be available at notexpm

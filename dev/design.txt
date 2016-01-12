@@ -20,6 +20,8 @@ Approach:
 - Figures, tables etc will not be positioned automatically, is that a good thing?
 - Page breaking, adding footnotes, etc will be difficult
 - Come up with a name
+- Should everything be <xml>-like or {%different%}? Consider: markup vs proc. language? html parser vs independent language?
+- Compiler itself should be an app, so that you can have multiple installed in parallel (pip package can't do that)
 -
 
 

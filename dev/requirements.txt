@@ -1,0 +1,12 @@
+
+Apt-get
+    For lxml parser: (http://stackoverflow.com/questions/6504810/how-to-install-lxml-on-ubuntu)
+        libxml2-dev
+        libxslt1-dev
+        python-dev
+
+Pip
+    beautifulsoup4
+    lxml
+
+
