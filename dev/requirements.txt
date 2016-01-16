@@ -1,12 +1,14 @@
 
 Apt-get
-    For lxml parser: (http://stackoverflow.com/questions/6504810/how-to-install-lxml-on-ubuntu)
-        libxml2-dev
-        libxslt1-dev
-        python-dev
+	For lxml parser: (http://stackoverflow.com/questions/6504810/how-to-install-lxml-on-ubuntu)
+		libxml2-dev   (compile)
+		libxslt1-dev  (compile)
+		python-dev    (compile)
 
 Pip
-    beautifulsoup4
-    lxml
+	beautifulsoup4   (compile)
+	lxml   (compile)
+	appdirs
+	argparse
 
 

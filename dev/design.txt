@@ -104,7 +104,8 @@ Considerations:
 - Make a document compile flag that outputs the settings to get suitable images for MPL, Matlab, etc. (font-type and -size, img width, maybe even colors).
 - Package for color coding of code
 - Maybe also a package for running code (pass a lot of context)
--
+- Do I need some kind of AJAX handlers?
+- Add timing for each app for each step
 
 
 Resources:

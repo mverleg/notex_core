@@ -1,38 +1,13 @@
 
-from os import chdir, getcwd
-from os.path import split
 from collections import OrderedDict
 from bs4 import BeautifulSoup
-import lxml  # lxml is required for parsing; the import is just here to check it is installed
 
 
 class Document():
 	def __init__(self, top_node):
 		self.top_node = top_node
 		self.soup = top_node.merge()
-
-
-def load_source(path):
-	"""
-	Load a notex source code file to text.
-	"""
-	#todo: some kind of NOTEX_PATH setting (plus cwd? and relative to main?)
-	with open(path, 'r') as fh:
-		return fh.read()
-
-
-def lxml_parser(text):
-	return BeautifulSoup(text, 'lxml')
-
-
-def parse_to_document(path, parser=lxml_parser, preprocessors=(), loader=load_source):
-	"""
-	Load a tree of files to a Document instance. See SourceNode for more info.
-	"""
-	dirpath, filename = split(path)
-	chdir(dirpath)
-	node = SourceNode(filename, parser=parser, preprocessors=preprocessors, loader=loader)
-	return Document(top_node=node)
+		assert isinstance(self.soup, BeautifulSoup)
 
 
 class SourceNode():
@@ -65,20 +40,12 @@ class SourceNode():
 		"""
 		Join this node and all ancestors into one beautiful soup.
 		"""
+		#todo: on hold
 		blended = self.soup
 		for include, node in self.children.items():
 			subsoup = node.merge()
 			#todo: add a comment about the include when in debug mode?
 			include.replace_with(subsoup)
 		return blended
-
-
-def pretty_render(document):
-	return document.soup.prettify('utf-8')
-
-
-# todo: test if inserting soups into eachother works:
-# todo:   .parents (all the way up?)
-# todo:   render
 
 

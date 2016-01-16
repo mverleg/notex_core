@@ -1,5 +1,5 @@
 
-from compiler.compiler import parse_to_document, Document, pretty_render
+from compiler.main import parse_to_document, Document, pretty_render
 
 
 def test_parse_demo():
