@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
-
 from argparse import ArgumentParser, SUPPRESS
 from json import dump
 from sys import argv, stderr, stdout
-
 from os import makedirs
 from os.path import dirname, exists, basename
 from pkg_resources import get_distribution, DistributionNotFound
 from tempfile import tempdir
-
-from compiler.conf import settings
 from compiler.server import launch_server
 
 
@@ -22,7 +18,7 @@ def pre_parse(args):
 	if not args:
 		args = ['--help']
 
-	parser = ArgumentParser(add_help=False, usage='{0:s} INPUTFILE --help'.format(basename(__file__)),
+	parser = ArgumentParser(add_help=False, usage='{0:s} CONFIGFILE --help'.format(basename(__file__)),
 		description='Command line interface for NoTeX functionality.\n\nCommands provided by extensions will become visible if you provide an input file!',
 		epilog='Provide an input file to load all commands provided by it\'s extensions.')
 
@@ -52,7 +48,7 @@ def pre_parse(args):
 	return opts, rest
 
 
-def parse(args):
+def parse(args, settings):
 	#todo: add one-letter shortcuts for most arguments
 	if not args:
 		args = ['--help']
@@ -122,6 +118,7 @@ def parse(args):
 		print(settings._get_config_string())
 		exit()
 
+	#todo: this shouldn't be happening here
 	if opts.action == 'make_conf':
 		conf_path = settings._get_user_config_location()
 		if exists(conf_path):

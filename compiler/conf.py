@@ -1,10 +1,10 @@
 
 from collections import OrderedDict
 from json import load, dumps
-from logging import warning
 from os import getenv
 from os.path import join, dirname, realpath
 from appdirs import user_config_dir
+from compiler.log import BasicLogger
 
 
 class Settings:
@@ -16,6 +16,7 @@ class Settings:
 	def __init__(self):
 		self._config = self._get_config()
 		self._config['verbosity'] = float('inf')
+		self._logger = None
 
 	def __getattr__(self, item):
 		# if item != 'config' and item in self._config:
@@ -57,7 +58,7 @@ class Settings:
 		"""
 		Get the defaults for configuration options.
 		"""
-		#todo: maybe hardcode defaults, it feels too changeable now...
+		#todo: maybe hardcode defaults, it feels too changeable now, and may give parser errors...
 		with open(join(self._get_code_dir(), 'notex_config_defaults.json'), 'r') as fh:
 			defaults = load(fp=fh, object_pairs_hook=OrderedDict)
 		try:
@@ -78,7 +79,7 @@ class Settings:
 				with open(path, 'r'):
 					pass
 			except (IOError, FileNotFoundError) as err:
-				warning(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
+				self.logger.warn(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
 					'but this could not be opened and "{2:s}" will be used instead. Reason: {3:s}')
 					.format(self.CONFIG_PATH_ENV, path, standard_path, str(err)))
 				return standard_path
@@ -106,7 +107,14 @@ class Settings:
 	def get_config_string(self):
 		return dumps(self._config, indent=4, sort_keys=False)
 
+	@property
+	def logger(self):
+		if self._logger is None:
+			self._logger = BasicLogger()
+		return self._logger
 
-settings = Settings()
+	@logger.setter
+	def logger(self, value):
+		self._logger = value
 
 

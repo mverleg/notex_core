@@ -1,0 +1,24 @@
+
+arguments I
+FOR document:
+	pre-process I (defaults or cached)
+	parse I (defaults or cached)
+	get modules & settings
+	arguments II
+	IF pre-processing or parsing is different:
+		  pre-process II (completely redo)
+		  parse II (complete redo, ignore requirements)
+      include >>
+      tags
+      substitutions
+linking
+external files
+rendering
+post-process
+
+------------------
+
+
+#todo: cache should be nuked if packages change
+
+

@@ -1,4 +1,12 @@
 
+Status:
+- Configuration can't be in the source file, since loader, pre-processor and parser are all needed to get to the settings (arguments are also convenient).
+- I'll have to switch to a configuration file instead (can be shared by multiple documents? and should be extensible, e.g. inherit a parent).
+- Try to keep all the configuration straight: packages, projects and user config; project can extend user config; command line can extend both; I think all 3 should have a fixed list of allowed options.
+- UPDATE: no, it really seems like a bad idea to keep requirements in a separate file, it's like linking requirements on the command line in Fortran, rather than at the top of each file like Python
+- So: loader can be a flag, since it's more system dependent than document dependent; for the parser I might require all of them to be xml-subsets so that I can be guaranteed to always be able to load with xml just to get config
+- Should each file have it's own requirements? And be parsed independent of modules loaded by other files? Perhaps can add global option to top-level requirements, and an independent feature to add 'inherit-parent-requirements' tag in any child.
+- ^ Does that mean I need a post-merge compile step? E.g. for figure numbers. => That's usually called linking, so yeah I need that
 
 How important is setting a specific compiler version?
 A: not at all: output looks different in different browsers anyway, why not different html?
@@ -58,6 +66,9 @@ Maybe never:
 
 
 Considerations:
+- Use multiprocessing only if compiling is typically slower than serialization (maybe time and cache this).
+- Should be able to integrate with memcached or something... Or maybe just a simple Python module?
+- ^This would be a compiler flag module, not one set in the document; how are those handled? PIP or package manager.
 - If I want footnotes etc visible on mouseover, then it should happen at compile-time and not with css
 - Require a kind of doctype (which could also hold the version?), to distinguish notex input from normal html (output or otherwise).
 - Make a tool that recompiles on page refresh to show the latest version

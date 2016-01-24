@@ -1,25 +1,52 @@
 
-#todo: need to load source before I can add argument parsers, but need source file argument and maybe more to be able to load
-#todo: merge as late as possible to make caching more effective (before 'compile_2html' but possibly after 'tags')
-#todo: cache should be nuked if packages change
-
-#todo: add loader to settings and to pre_parse
-
 from sys import argv
 from compiler.arguments import pre_parse
+from compiler.conf import Settings
+from compiler.log import BasicLogger
+from compiler.loader import SourceLoader
+
 
 
 """
-Pre-parse
-Get path to input file (and parse some general options).
+arguments I
+FOR document:
+	pre-process I (defaults or cached)
+	parse I (defaults or cached)
+	get modules & settings
+	arguments II
+	IF pre-processing or parsing is different:
+		pre-process II (completely redo)
+		parse II (complete redo, ignore requirements)
+	include >>
+	tags
+	substitutions
+linking
+external files
+rendering
+post-process
+"""
+
+
+"""
+Command-line arguments
+Get path to input file and handle some general options.
 """
 pre_opts, rest_args = pre_parse(argv[1:])
 
 """
-Configuration.
+Configure settings including logger.
 """
-from compiler.conf import settings
-settings.verbosity = pre_opts.verbosity
+logger = BasicLogger(verbosity=pre_opts.verbosity)
+logger.info('created logger', level=2)
+settings = Settings()
+settings.logger = logger
+settings.logger.info('loaded settings & logger', level=2)
+
+"""
+Load first source file
+"""
+SourceLoader(paths=())
+
 
 """
 Must be combined:
@@ -28,29 +55,11 @@ Must be combined:
 3. Parse
 (Since files must be parsed to find imports).
 """
-#todo: this doesn't work, I can't set the parser directives in a file that needs to be parsed first
 
 
 
 
-# arguments I
-# load & structure
-# get modules
-# arguments II
-# pre-process
-# parse
-# include
-# load (install)
-# substitute
-# tags
-# static files
-# compile_2html
-# postprocess
 
-from compiler.loader import SourceLoader
-
-
-SourceLoader(paths=())
 
 
 

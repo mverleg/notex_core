@@ -1,0 +1,13 @@
+
+- Alternative parsers must parse subsets of xml, that is, any input must also be parse-able by an xml parser.
+  Furthermore, parsing behaviour of requirements and settings must not require any special parsing
+    These requirements are needed because an XML-parse is done first to get these settings,
+    before re-parsing with any chosen special parser (although caching might make this step unnecessary sometimes).
+
+- Pre-processors may not change requirement, include or settings statements
+    This requirement is needed because these are loaded without pre-processing initially.
+    However, they may be loaded with pre-processing due to cache, which must not make a difference!
+
+-
+
+
