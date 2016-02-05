@@ -66,6 +66,10 @@ Maybe never:
 
 
 Considerations:
+- Restructure the file loader to use promises (start loading the file in a thread and returns it when actually needed).
+- Figure out where/how to use caching; caching for Documents should rely recursively on package versions and file modified times, but possinbly also expose other structure.
+- Should static files be an app, or be treated differently? It has an effect on caching. But there may be future different statics (so should be flexible).
+- Should references/citations etc be an app, or treated differently? Needs communication between rendered documents and top. But there are many variations (so should be flexible).
 - It's annoying that there won't be a way to give warnings if tags are not defined; I might make one for non-html5 tags but it'll be incomplete since html5 tags can also be redifined.
 - <render> tag as alternative to <include>, which renders the whole subpage (without inheriting packages etc) [recommend a different extension for included pages?]
 	This is problematic with references, citations and other linking stuff, which should happen only at the top page
