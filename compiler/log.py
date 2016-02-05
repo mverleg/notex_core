@@ -14,11 +14,11 @@ class BasicLogger:
 		self.err = err
 
 	def info(self, msg, level=1):
-		if level >= self.verbosity:
+		if level <= self.verbosity:
 			self.out.write('{0:s}\n'.format(msg))
 
 	def warn(self, msg, level=1):
-		if level >= self.verbosity:
+		if level <= self.verbosity:
 			self.err.write('{0:s}\n'.format(msg))
 
 

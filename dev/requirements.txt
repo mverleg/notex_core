@@ -10,5 +10,6 @@ Pip
 	lxml   (compile)
 	appdirs
 	argparse
+    dogpile.cache  (compile)
 
 

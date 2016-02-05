@@ -2,7 +2,7 @@
 
 from argparse import ArgumentParser, SUPPRESS
 from json import dump
-from sys import argv, stderr, stdout
+from sys import stderr, stdout
 from os import makedirs
 from os.path import dirname, exists, basename
 from pkg_resources import get_distribution, DistributionNotFound
@@ -44,6 +44,8 @@ def pre_parse(args):
 		else:
 			stdout.write('{0:}\n'.format(version))
 		exit()
+
+	opts.verbosity += 1
 
 	return opts, rest
 
