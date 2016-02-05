@@ -2,3 +2,5 @@
 *.pyc
 .idea/
 .cache/
+_build/
+
