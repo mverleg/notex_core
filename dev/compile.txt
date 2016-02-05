@@ -18,7 +18,7 @@ post-process
 
 ------------------
 
-Perhaps somehow rendered tags could be cached based on the arguments they recieve
+Perhaps somehow rendered tags could be cached based on the arguments they receive
 These arguments shouldn't be huge objects like 'request' then, or they should be immnutable so they can be hashed once per compile
 
 #todo: cache should be nuked if packages change

@@ -66,8 +66,15 @@ Maybe never:
 
 
 Considerations:
+- It's annoying that there won't be a way to give warnings if tags are not defined; I might make one for non-html5 tags but it'll be incomplete since html5 tags can also be redifined.
+- <render> tag as alternative to <include>, which renders the whole subpage (without inheriting packages etc) [recommend a different extension for included pages?]
+	This is problematic with references, citations and other linking stuff, which should happen only at the top page
+	Possibly the linker classes get an argument is_top, and then the top page should have all the linkers (either automatically or check it)
+- How to do caching with static files? They're loaded directly in compile-to-file mode, but in make-everything-one-file mode or in server mode, how to know an image changed?
+	I can't really watch all the files in the project as once hash, since then I might as well only cache packages
+    I might parse css and js (and stylus/coffeescript) for filenames; the <css>/<js> tags should have a 'nocache' attribute though, in case js has dynamically generated filenames
 - It's a bit questionable to generate the license file, since the code should always be distributed with the license (incl. upload?)
-    On the other hand, I don't want to have to check whether all licenses match their official versions.
+	On the other hand, I don't want to have to check whether all licenses match their official versions.
 - Use multiprocessing only if compiling is typically slower than serialization (maybe time and cache this).
 - Should be able to integrate with memcached or something... Or maybe just a simple Python module?
 - ^This would be a compiler flag module, not one set in the document; how are those handled? PIP or package manager.
@@ -90,23 +97,23 @@ Considerations:
 - Should people use <article>, <section>? Or should they use <chapter> which I then convert? Or use just headers and add articles automatically?
 - Use JS strict mode, but not for entire files https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode
 - What about figure/equation/table numbering? CSS can do numbering but no references, so do this in code.
-    Including 'only number referenced figures'? And ofc. make clickable links.
+	Including 'only number referenced figures'? And ofc. make clickable links.
 - I should list latex complaints to make sure they're actually solved.
 - Make all references (fig ref, footnote, citation) clickable/hoverable to reveal the full target so you never have to search.
 - Should citations still use tex? http://tex.stackexchange.com/questions/11516/alternatives-to-bibtex2html (add hrefs though, this is the 21st century)?
-    A custom templating engine would work quite well for bibliography.
+	A custom templating engine would work quite well for bibliography.
 - Should self-contained version of document with multiple chapters be a SPA?
-    It's pretty much the only way; should there be url updates and everything?
+	It's pretty much the only way; should there be url updates and everything?
 - addons installed in addons/name/v1.0 where 1.0.2 is expected to be just bugfixes for 1.0.1 (and so the latest 1.0.* is always used)
-    They're hosted on a server anyway so might as well use that as a cdn.
+	They're hosted on a server anyway so might as well use that as a cdn.
 - Security warning about blindly pasting documents on your website.
 - How do themes (book template, crimson style) relate to display modes (print version, paged vs flow, ..)
-    Also night mode, contrast mode, ...
+	Also night mode, contrast mode, ...
 - Remember document position using url hash as well as cookie
 - What to do with versions? Have compiler & addon versions, with the option of using old ones?
-    It'll still look different in different browsers though
+	It'll still look different in different browsers though
 - Might be good to create a few javascript events:
-    http://www.kirupa.com/html5/custom_events_js.htm
+	http://www.kirupa.com/html5/custom_events_js.htm
 - Should there be pdf versions? Or is printable & standalone enough?
 - Include source in output by default? Sensitive comments...
 - How can modules e.g. replace tags? There must be a compiler hook somewhere
