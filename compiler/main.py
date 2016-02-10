@@ -1,10 +1,9 @@
+
 from collections import OrderedDict
 from sys import argv
-
 from copy import copy
-
 from compiler.arguments import pre_parse
-from compiler.basic import Document
+from compiler._basic import Document
 from compiler.conf import Settings
 from compiler.log import BasicLogger
 from compiler.loader import SourceLoader
@@ -12,26 +11,7 @@ from notexp.package import Package
 from parser_lxml.parser import LXML_Parser
 
 
-"""
-arguments I
-FOR document:
-	pre-process I (defaults or cached)
-	parse I (defaults or cached)
-	get modules & settings
-	arguments II
-	IF pre-processing or parsing is different:
-		pre-process II (completely redo)
-		parse II (complete redo, ignore requirements)
-	include >>
-	tags
-	substitutions
-linking
-external files
-rendering
-post-process
-"""
-
-def handle_document(settings, path, depth=0):
+def compile_document(settings, path, depth=0):
 	"""
 	"""
 	"""
@@ -125,7 +105,7 @@ def main():
 	"""
 	Recursively compile all the documents.
 	"""
-	handle_document(settings, pre_opts.input)
+	compile_document(settings, pre_opts.input)
 
 if __name__ == '__main__':
 	main()

@@ -5,6 +5,9 @@ from time import sleep
 from dogpile.cache import make_region
 
 
+# https://bitbucket.org/zzzeek/dogpile.cache/issues/93/auto-select-an-available-backend
+
+
 def mangler(key):
 	return 'notex_' + str(key)
 

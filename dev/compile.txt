@@ -16,6 +16,9 @@ external files
 rendering
 post-process
 
+!!! See documentation graph for the compiler layout
+
+
 ------------------
 
 Perhaps somehow rendered tags could be cached based on the arguments they receive
