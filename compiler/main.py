@@ -2,30 +2,32 @@
 from collections import OrderedDict
 from sys import argv
 from copy import copy
+from os.path import realpath, dirname
+
 from compiler.arguments import pre_parse
-from compiler._basic import Document
 from compiler.conf import Settings
+from compiler.leaf import Leaf, ParallelLeaf
 from compiler.log import BasicLogger
 from compiler.loader import SourceLoader
 from notexp.package import Package
 from parser_lxml.parser import LXML_Parser
 
 
-def compile_document(settings, path, depth=0):
+def compile_document(path, logger, loader, depth=0):
 	"""
 	"""
 	"""
 	Load first source file.
 	"""
-	settings.logger.info('load "{0:s}"'.format(path), level=2)
-	content = settings.loader.load(path)
+	logger.info('load "{0:s}"'.format(path), level=2)
+	content = loader._load(path)
 
 	"""
 	Pre-processing using a guessed list of pre-processors, since the real list is only available after parsing.
 	"""
 	preliminary_pre_processors = []  #todo
 	for pre_processor in preliminary_pre_processors:
-		settings.logger.info('  pre-process "{0:s}" using "{1:s}"'.format(path, pre_processor), level=2)
+		logger.info('  pre-process "{0:s}" using "{1:s}"'.format(path, pre_processor), level=2)
 		content = pre_processor(content)
 
 	"""
@@ -33,7 +35,7 @@ def compile_document(settings, path, depth=0):
 	"""
 	prelimiary_parser = LXML_Parser()
 	soup = prelimiary_parser.parse(content)
-	settings.logger.info(' parse "{0:s}"'.format(path), level=2)
+	logger.info(' parse "{0:s}"'.format(path), level=2)
 	doc = Document(soup, None)
 
 	"""
@@ -47,7 +49,7 @@ def compile_document(settings, path, depth=0):
 			.format('" & "'.join('{0:s}={1:}'.format(k, v) for k, v in pack_tag.attrs.items()), path)
 		name = package_args.pop('name')
 		version = package_args.pop('version', '==*')
-		settings.logger.info('  load package {0:s}{1:s} for "{2:s}" with {3:d} arguments'.format(
+		logger.info('  load package {0:s}{1:s} for "{2:s}" with {3:d} arguments'.format(
 			name, version, path, len(package_args)), level=2)
 		pkg = Package(name=name, version=version, options=package_args).load()
 		packages.append(pkg)
@@ -90,6 +92,7 @@ def main():
 	Get path to input file and handle some general options.
 	"""
 	pre_opts, rest_args = pre_parse(argv[1:])
+	path = pre_opts.input
 
 	"""
 	Configure some singleton configuration classes.
@@ -97,15 +100,21 @@ def main():
 	logger = BasicLogger(verbosity=pre_opts.verbosity)
 	logger.info('created logger', level=2)
 	settings = Settings()
-	settings.logger.info('load settings', level=2)
-	settings.logger = logger
+	logger.info('load settings', level=2)
+	# settings.logger = logger
 	logger.info('create file loader', level=2)
-	settings.loader = SourceLoader(dir_paths=())
+	loader = SourceLoader(dir_paths=(dirname(realpath(path)),))
+	parser = LXML_Parser()
 
 	"""
 	Recursively compile all the documents.
 	"""
-	compile_document(settings, pre_opts.input)
+	#leaf = ParallelLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
+	leaf = Leaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
+	print(leaf.get())
+
+	#compile_document(pre_opts.input, logger, loader)
+
 
 if __name__ == '__main__':
 	main()

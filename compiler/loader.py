@@ -17,7 +17,9 @@ class SourceLoader:
 		:param dir_paths: Iterable of paths from which files can be loaded.
 		"""
 		assert hasattr(dir_paths, '__iter__')
-		self.dir_paths = [getcwd()] if include_cwd else []
+		self.dir_paths = list(dir_paths)
+		if include_cwd:
+			self.dir_paths.append(getcwd())
 		for path in dir_paths:
 			if isdir(path):
 				self.dir_paths.append(abspath(path))
@@ -56,7 +58,7 @@ class SourceLoader:
 		match = self.exists(file_path)
 		if match is None:
 			tried = tuple(self.search_paths(file_path))
-			SourceFileNotFound('Did not find "{0:s}"; tried "{1:s}"'.format(file_path, '", "'.join(tried)))
+			raise SourceFileNotFound('Did not find "{0:s}"; tried "{1:s}"'.format(file_path, '", "'.join(tried)))
 		return match
 
 	def load(self, file_path):

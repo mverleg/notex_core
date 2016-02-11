@@ -9,14 +9,14 @@ from compiler.log import BasicLogger
 
 class Settings:
 	"""
-		Should behave like a settings module.
+	Should behave like a settings module.
 	"""
 	CONFIG_PATH_ENV = 'NOTEX_CONFIG'
 
 	def __init__(self):
 		self._config = self._get_config()
-		self._config['verbosity'] = float('inf')
-		self._logger = None
+		# self._config['verbosity'] = float('inf')
+		# self._logger = None
 
 	def __getattr__(self, item):
 		# if item != 'config' and item in self._config:
@@ -107,14 +107,14 @@ class Settings:
 	def get_config_string(self):
 		return dumps(self._config, indent=4, sort_keys=False)
 
-	@property
-	def logger(self):
-		if self._logger is None:
-			self._logger = BasicLogger()
-		return self._logger
-
-	@logger.setter
-	def logger(self, value):
-		self._logger = value
+	# @property
+	# def logger(self):
+	# 	if self._logger is None:
+	# 		self._logger = BasicLogger()
+	# 	return self._logger
+	#
+	# @logger.setter
+	# def logger(self, value):
+	# 	self._logger = value
 
 
