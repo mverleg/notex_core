@@ -1,12 +1,12 @@
+from time import time
 
 from collections import OrderedDict
 from sys import argv
 from copy import copy
 from os.path import realpath, dirname
-
 from compiler.arguments import pre_parse
 from compiler.conf import Settings
-from compiler.leaf import Leaf, ParallelLeaf
+from compiler.leaf import Leaf, MultiThreadedLeaf
 from compiler.log import BasicLogger
 from compiler.loader import SourceLoader
 from notexp.package import Package
@@ -109,9 +109,14 @@ def main():
 	"""
 	Recursively compile all the documents.
 	"""
+	initt = time()
 	#leaf = ParallelLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
-	leaf = Leaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
-	print(leaf.get())
+	# leaf = Leaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
+	leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
+	# print(leaf.get().prettify())
+	leaf.get()
+	print('took', 1000 * (time() - initt), 'ms')
+	print('for a few tiny leafs, multithreaded takes 3x longer')
 
 	#compile_document(pre_opts.input, logger, loader)
 

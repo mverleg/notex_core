@@ -1,9 +1,6 @@
 
-from functools import partial
-from multiprocessing import Process, Pipe
-from time import sleep
-from parser_lxml.parser import LXML_Parser
-from atexit import register
+from threading import Thread
+from bs4 import BeautifulSoup
 
 
 class Leaf:
@@ -19,7 +16,7 @@ class Leaf:
 	@staticmethod
 	def _get_single(path, logger, loader, preproc, parser, depth):
 		"""
-		Load, pre-process and parse a single source file non-recursively.
+		Load and pre-process a single source file.
 		"""
 		logger.info('{1:s}load "{0:s}"'.format(path, ' ' * depth), level=2)
 		content = loader.load(path)
@@ -29,12 +26,12 @@ class Leaf:
 			logger.info(' {2:s}pre-process "{0:s}" using "{1:s}"'.format(path, pre_processor, ' ' * depth), level=2)
 			content = pre_processor(content)
 
-		""" Parsing """
+		""" Parse. """
 		logger.info(' {1:s}parse "{0:s}"'.format(path, ' ' * depth), level=2)
-		return parser.parse(content)
+		return parser.parse('<leaf origin="{0:s}">'.format(path) + content + '</leaf>')
 
 	@staticmethod
-	def depth_limit(incls, logger, depth):
+	def _depth_limit(incls, logger, depth):
 		if depth >= 10:
 			logger.strict_fail('includes reached a depth of {0:d}; not going deeper'.format(depth))
 			for incl in incls:
@@ -43,9 +40,10 @@ class Leaf:
 		return False
 
 	@staticmethod
-	def with_src(incl, logger, path):
+	def _with_src(incl, logger, path):
 		if not 'src' in incl.attrs:
 			logger.strict_fail('{0:s}: <include> tag without `src` attribute'.format(path))
+			incl.extract()
 			return False
 		return True
 
@@ -54,45 +52,174 @@ class Leaf:
 		"""
 		Load, pre-process and parse an included file (leaf) and recursively load any other leafs.
 		"""
-		""" Handle this file. """
+		""" Load & preproc this file. """
 		soup = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
 
 		""" Handle includes. """
 		incls = soup.find_all('include')
-		if not Leaf.depth_limit(incls=incls, logger=logger, depth=depth):
+		if not Leaf._depth_limit(incls=incls, logger=logger, depth=depth):
 			for incl in incls:
-				if Leaf.with_src(incl=incl, logger=logger, path=path):
+				if Leaf._with_src(incl=incl, logger=logger, path=path):
 					sub = Leaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
-						parser=parser, depth=0).get()
-					incl.replace_with(sub)
+						parser=parser, depth=depth + 1)
+					incl.replace_with(sub.get())
 
-		""" Return soup """
+		""" Return soup. """
+		return soup.html.body.leaf
+
+
+class MultiThreadedLeaf:
+	"""
+	Load and parse an included or rendered document.
+	"""
+	def __init__(self, path, loader, logger, preproc, parser, depth=0, incl_dict=None):
+		if incl_dict is None:
+			incl_dict = {}
+		self.incl_dict = incl_dict
+		self.path = path
+		self.depth = depth
+		self._worker = Thread(target=self._load_async, kwargs=dict(path=self.path, logger=logger, loader=loader,
+			preproc=preproc, parser=parser, depth=self.depth, incl_dict=incl_dict), daemon=True)
+		self._worker.start()
+		self.soup = None
+
+	def get(self):
+		"""
+		Join the worker threads (they store the results). Merge all the leafs if this is the top node.
+		"""
+		if self._worker is not None:
+			self._worker.join()
+			self._worker = None
+		if self.soup is None and self.depth == 0:
+			self.soup = self._substitute_includes(self.incl_dict[self.path])
+		return self.soup
+
+	def _substitute_includes(self, soup):
+		"""
+		Recursively replace <include> tags in soup by their already-loaded content from self.incl_dict.
+		"""
+		for incl in soup.find_all('include'):
+			assert incl.attrs['src'] in self.incl_dict, '{0:s} should exist in incl_dict but it only has [{1:}]'\
+				.format(incl.attrs['src'], ', '.join(self.incl_dict))
+			content = self.incl_dict[incl.attrs['src']]
+			incl.replace_with(self._substitute_includes(content))
 		return soup
 
+	@staticmethod
+	def _load_async(path, logger, loader, preproc, parser, depth, incl_dict):
+		"""
+		Load, pre-process and parse an included file (leaf). Recursively load other leafs but store them in a dict
+		as updating the main tree concurrently might cause problems.
+		"""
+		""" Check the file hasn't been processed yet (not thread-safe, but it's not dangerous). """
+		if path in incl_dict:
+			logger.info('{0:s}load "{1:s}": already loading/loaded'.format(' ' * depth, path))
+			return
+		incl_dict[path] = None
 
-class ParallelLeaf:
+		""" Load & preproc this file. """
+		soup = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
+
+		""" Handle includes. """
+		incls = soup.find_all('include')
+		subleafs = []
+		if not Leaf._depth_limit(incls=incls, logger=logger, depth=depth):
+			for incl in incls:
+				if Leaf._with_src(incl=incl, logger=logger, path=path):
+					sub = MultiThreadedLeaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
+						parser=parser, depth=depth + 1, incl_dict=incl_dict)
+					subleafs.append(sub)
+
+		""" Add soup. """
+		incl_dict[path] = soup.html.body.leaf
+
+		""" Don't stop before subleafs are ready. """
+		for sub in subleafs:
+			sub.get()
+
+	# def get(self):
+	# 	return self.soup
+	#
+	# @staticmethod
+	# def _get_single(path, logger, loader, preproc, parser, depth):
+	# 	"""
+	# 	Load and pre-process a single source file.
+	# 	"""
+	# 	logger.info('{1:s}load "{0:s}"'.format(path, ' ' * depth), level=2)
+	# 	content = loader.load(path)
+	#
+	# 	""" Pre-processing """
+	# 	for pre_processor in preproc:
+	# 		logger.info(' {2:s}pre-process "{0:s}" using "{1:s}"'.format(path, pre_processor, ' ' * depth), level=2)
+	# 		content = pre_processor(content)
+	# 	return content
+	#
+	# @staticmethod
+	# def depth_limit(incls, logger, depth):
+	# 	if depth >= 10:
+	# 		logger.strict_fail('includes reached a depth of {0:d}; not going deeper'.format(depth))
+	# 		for incl in incls:
+	# 			incl.extract()
+	# 		return True
+	# 	return False
+	#
+	# @staticmethod
+	# def with_src(incl, logger, path):
+	# 	if not 'src' in incl.attrs:
+	# 		logger.strict_fail('{0:s}: <include> tag without `src` attribute'.format(path))
+	# 		return False
+	# 	return True
+	#
+	# @staticmethod
+	# def _load(path, logger, loader, preproc, parser, depth):
+	# 	"""
+	# 	Load, pre-process and parse an included file (leaf) and recursively load any other leafs.
+	# 	"""
+	# 	""" Load & preproc this file. """
+	# 	html = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
+	#
+	# 	""" Parsing """
+	# 	logger.info(' {1:s}parse "{0:s}"'.format(path, ' ' * depth), level=2)
+	# 	soup = parser.parse(html)
+	#
+	# 	""" Handle includes. """
+	# 	incls = soup.find_all('include')
+	# 	if not Leaf.depth_limit(incls=incls, logger=logger, depth=depth):
+	# 		for incl in incls:
+	# 			if Leaf.with_src(incl=incl, logger=logger, path=path):
+	# 				sub = Leaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
+	# 					parser=parser, depth=0).get()
+	# 				incl.replace_with(sub)
+	#
+	# 	""" Return soup """
+	# 	return soup
+
+
+
+class MultiProcessLeaf:
 	"""
-	Load and parse an included or rendered document, using a worker process.
+	Load and parse an included or rendered document, using multiple threads for reading.
 	"""
-	def __init__(self, path, loader, logger, preproc, parser, depth=0):
-		#todo: how to deal with errors?
-		self.pipe, remote_pipe = Pipe()
-		self.parser = LXML_Parser()
-		self._worker = Process(target=self._load_async, kwargs=dict(path=path, loader=loader, logger=logger,
-			preproc=preproc, parser=self.parser, depth=depth, pipe=remote_pipe))
+	#todo: make sure everything is thread-safe (like lock before parsing?)
+	#todo: local data threading.local()
+	def __init__(self, path, loader, logger, preproc, parser, depth=0, incl_dict=None):
+		self.depth = depth
+		if incl_dict is None:
+			incl_dict = {}
+		self.incl_dict = incl_dict
+		self._worker = Thread(target=self._load_async, kwargs=dict(path=path, loader=loader, logger=logger,
+			preproc=preproc, parser=parser, depth=self.depth, incl_dict=self.incl_dict), daemon=True)
 		self._worker.start()
-		register(partial(ParallelLeaf._stop_worker, self._worker))
 		self.html = self.soup = None
 
 	def get(self):
-		if self.soup is None:
-			self.soup = self._get_soup_from_html_or_worker()
+		print('waiting for worker')
+		self._worker.join()
+		if self.html is None:
+			print('')
+			self.soup = BeautifulSoup('<div />', 'lxml')
+			# self.soup = self._get_soup_from_html_or_worker()
 		return self.soup
-
-	def get_html(self):
-		if self.html is None and self._worker:
-			self._get_html_from_worker()
-		return self.html
 
 	def _get_html_from_worker(self):
 		"""
@@ -105,55 +232,29 @@ class ParallelLeaf:
 		self._worker = None
 		return self.html
 
-	def _get_soup_from_html_or_worker(self):
-		if self.html is None:
-			assert self._worker
-			self.html = self._get_html_from_worker()
-		if self.soup is None:
-			self.soup = self.parser.parse(self.html)
-		return self.soup
-
 	@staticmethod
-	def _load_async(path, logger, loader, preproc, parser, depth, pipe):
+	def _load_async(path, logger, loader, preproc, parser, depth, incl_dict):
 		"""
 		Load, pre-process and parse an included file (leaf) and recursively load any other leafs.
-		This should be run in a subprocess or thread, communicating through `pipe`.
+		This should be run in a thread, communicating through a shared dictionary.
 		"""
-		soup = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
+		""" Load and pre-process. """
+		html = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
 
-		"""
-		Includes
-		Make sure to start all of them first and then start joining them, otherwise parallelism isn't used.
-		"""
-		incls = soup.find_all('include')
-		if not Leaf.depth_limit(incls=incls, logger=logger, depth=depth):
-			subleafs = []
-			for incl in incls:
-				if Leaf.with_src(incl=incl, logger=logger, path=path):
-					sub = ParallelLeaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
-						parser=parser, depth=0)
-					subleafs.append((incl, sub))
-			for incl, sub in subleafs:
-				#todo: I should find some way to not have to parse this
-				incl.replace_with(sub.get())
+		""" Parsing """
+		logger.info(' {1:s}find includes "{0:s}"'.format(path, ' ' * depth), level=2)
+		incl_soup = parser.parse(html, only='include')
 
-		"""
-		Send back as html
-		Did a benchmark; prettify & parsing again is 20-40% slower, but pickle doesn't always work due to recursion
-		limit and according to StackOverflow other problems.
-		Additionally, the result may have to go up several levels. If I can somehow keep it as html, it only needs to
-		be converted back and forth once (pickle would need this at every level).
-		"""
-		html = soup.prettify()
+		""" Handle includes. """
+		if not Leaf._depth_limit(incls=incl_soup, logger=logger, depth=depth):
+			for incl in incl_soup:
+				if Leaf._with_src(incl=incl, logger=logger, path=path):
+					sub = MultiThreadedLeaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
+						parser=parser, depth=0, incl_dict=incl_dict).get()
+					# incl.replace_with(sub)
+					incl_dict[path] = sub
 
-		""" Wait (blocking) until the result is requested """
-		pipe.recv()
-		pipe.send(html)
-		pipe.close()
-
-	@staticmethod
-	def _stop_worker(worker):
-		if worker and worker.is_alive():
-			worker.terminate()
+		""" Return soup """
+		return incl_dict
 
 

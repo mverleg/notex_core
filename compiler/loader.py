@@ -11,6 +11,8 @@ class SourceFileNotFound(FileNotFoundError):
 class SourceLoader:
 	"""
 	Load source files directly, without caching.
+
+	Reading the same file multiple times concurrently is already safe, no need for locks.
 	"""
 	def __init__(self, dir_paths, include_cwd=True):
 		"""
