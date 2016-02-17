@@ -1,16 +1,19 @@
-from time import time
 
+from itertools import chain
 from collections import OrderedDict
 from sys import argv
 from copy import copy
-from os.path import realpath, dirname
+from os import mkdir, getcwd, makedirs
+from os.path import realpath, dirname, exists, join
+from shutil import copyfile, rmtree
 from compiler.arguments import pre_parse
-from compiler.conf import Settings
-from compiler.leaf import Leaf, MultiThreadedLeaf
+from compiler.conf import CompileSettings, DocumentSettings
 from compiler.log import BasicLogger
 from compiler.loader import SourceLoader
+from compiler.section import Section
+from compiler.utils import cd
 from notexp.package import Package
-from parser_lxml.parser import LXML_Parser
+from parse_render__lxml.parser import LXML_Parser
 
 
 def compile_document(path, logger, loader, depth=0):
@@ -66,62 +69,66 @@ def compile_document(path, logger, loader, depth=0):
 	# print(total_conf)
 	#todo: join with global settings
 
-	# print(doc.soup)
-
-	"""
-
-	"""
-
-
-
-
-		# <config base_path="value" property="value" />
-
 # 		self.children = OrderedDict()
 # 		for include in self.soup.find_all('include'):
 # 			assert include.has_attr('src'), '' #todo
 # 			node = SourceNode(include['src'], parser=parser, preprocessors=preprocessors, loader=loader)
 # 			self.children[include] = node  #todo: hope it's hashable
 
+def render_dir(packages, content, target_dir, offline=False):
+	#todo: This is just one render mode, and should become a package.
+	with open(packages.get_template(), 'r') as fh:
+		html = fh.read()
+	if exists(target_dir):
+		rmtree(target_dir)
+	mkdir(target_dir)
+	for resource in chain(packages.get_styles(offline=offline), packages.get_scripts(offline=offline),
+			packages.get_static(offline=offline)):
+		if resource.external:
+			print('external: "{0:s}"'.format(resource.path))
+		else:
+			print('"{0:s}" -> "{1:s}"'.format(resource.full_path, join(target_dir, resource.path)))
+			makedirs(dirname(join(target_dir, resource.path)), exist_ok=True)
+			copyfile(resource.full_path, join(target_dir, resource.path), follow_symlinks=True)
+	styles = '\n\t\t'.join(style.html for style in packages.get_styles())
+	scripts = '\n\t\t'.join(script.html for script in packages.get_scripts())
+	document = html.format(content=content, styles=styles, scripts=scripts)
+	with open(join(target_dir, 'index.html'), 'w+') as fh:
+		fh.write(document)
 
-def main():
-	"""
-	"""
-	"""
-	Command-line arguments.
-	Get path to input file and handle some general options.
-	"""
-	pre_opts, rest_args = pre_parse(argv[1:])
-	path = pre_opts.input
 
+def do_compile(source=None, target=None):
+	#todo: target from arguments
 	"""
-	Configure some singleton configuration classes.
 	"""
-	logger = BasicLogger(verbosity=pre_opts.verbosity)
-	logger.info('created logger', level=2)
-	settings = Settings()
-	logger.info('load settings', level=2)
-	# settings.logger = logger
-	logger.info('create file loader', level=2)
-	loader = SourceLoader(dir_paths=(dirname(realpath(path)),))
-	parser = LXML_Parser()
+	with cd(source or getcwd()):
+		"""
+		Command-line arguments.
+		Get path to input file and handle some general options.
+		"""
+		pre_opts, rest_args = pre_parse(argv[1:])
+		path = pre_opts.input
 
-	"""
-	Recursively compile all the documents.
-	"""
-	initt = time()
-	#leaf = ParallelLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
-	# leaf = Leaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
-	leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
-	# print(leaf.get().prettify())
-	leaf.get()
-	print('took', 1000 * (time() - initt), 'ms')
-	print('for a few tiny leafs, multithreaded takes 3x longer')
+		"""
+		Configure some singleton configuration classes.
+		"""
+		logger = BasicLogger(verbosity=pre_opts.verbosity)
+		logger.info('created logger', level=2)
+		compile_settings = CompileSettings()
+		document_settings = DocumentSettings()
+		logger.info('load settings', level=2)
+		# settings.logger = logger
+		logger.info('create file loader', level=2)
+		loader = SourceLoader(dir_paths=(dirname(realpath(path)),))
+		# parser = LXML_Parser()
 
-	#compile_document(pre_opts.input, logger, loader)
+		section = Section(path, loader=loader, logger=logger)
+		content = section.get()
+		target = target or join(getcwd(), 'my_document')
+		render_dir(packages=section.packages, content=content, target_dir=target, offline=True)
 
 
 if __name__ == '__main__':
-	main()
+	do_compile()
 
 

@@ -2,119 +2,137 @@
 from collections import OrderedDict
 from json import load, dumps
 from os import getenv
-from os.path import join, dirname, realpath
+from os.path import join, dirname, realpath, abspath
 from appdirs import user_config_dir
-from compiler.log import BasicLogger
 
 
-class Settings:
+class BaseSettings:
 	"""
-	Should behave like a settings module.
+	This should be extended by specific setting classes (compiler, package manager, document...).
+	They should be considered singletons (it's not enforced).
 	"""
-	CONFIG_PATH_ENV = 'NOTEX_CONFIG'
+	_DEFAULT_VALUES_FILE = 'defaults.json'
+	_CONFIG_PATH_DEFAULT = join(user_config_dir('notex'), 'default_config.json')
+	_CONFIG_PATH_ENV = 'NOTEX_DEFAULT_CONFIG'
 
 	def __init__(self):
-		self._config = self._get_config()
-		# self._config['verbosity'] = float('inf')
-		# self._logger = None
+		"""
+		Set the default configuration values. Should be overridden by subclasses.
+		"""
+		self._code_dir = dirname(realpath(__file__))
+		self._config = OrderedDict()
 
 	def __getattr__(self, item):
-		# if item != 'config' and item in self._config:
-		# 	return self._config[item]
-		# return self.__getattribute__(item)
+		"""
+		All public properties (not starting with _) are looked up in config dictionary.
+		"""
 		if not item.startswith('_'):
-			return self._config[item]
-		return super().__getattr__(item)
-		#self.__getattribute__(item)
+			try:
+				return self._config[item]
+			except KeyError:
+				raise
+		return super(BaseSettings, self).__getattr__(item)
 
 	def __setattr__(self, item, value):
+		"""
+		All public properties (not starting with _) are stored in config dictionary.
+		"""
 		if not item.startswith('_'):
 			self._config[item] = value
 		super().__setattr__(item, value)
 
-	@classmethod
-	def _get_base_dir(cls):
-		"""
-			Get the base directory of notex_core.
-		"""
-		return dirname(cls._get_code_dir())
+	def __repr__(self):
+		return '{0:s}'.format(self.__class__.__name__)
 
-	@staticmethod
-	def _get_code_dir():
-		"""
-			Get the source directory of notex_core.
-		"""
-		return dirname(realpath(__file__))
+	def __str__(self):
+		return dumps(self._config, indent=4, sort_keys=False)
 
-	def _get_config(self):
-		"""
-		Get the configuration as specified by the user, with defaults for unspecified values.
-		"""
-		config = self._get_defaults()
-		config.update(self._load_user_config_file())
-		return config
+	#todo: custom json dump?
+	#todo: hash?
 
-	def _get_defaults(self):
+	def _add_defaults(self):
 		"""
-		Get the defaults for configuration options.
+		Set the defaults for all configuration options that have defaults.
 		"""
-		#todo: maybe hardcode defaults, it feels too changeable now, and may give parser errors...
-		with open(join(self._get_code_dir(), 'notex_config_defaults.json'), 'r') as fh:
+		with open(join(self._code_dir, self._DEFAULT_VALUES_FILE), 'r') as fh:
 			defaults = load(fp=fh, object_pairs_hook=OrderedDict)
-		try:
-			defaults['package_sources']['default']['directory'] = user_config_dir('notex')
-		except KeyError:
-			raise Exception('default config file appears incomplete')
-		return defaults
+		self._config.update(defaults)
 
-	def _get_user_config_location(self):
+	def _add_config_file(self):
 		"""
-		Get the location that the user configuration is stored at.
-		:return:
-		"""
-		standard_path = join(user_config_dir('notex'), 'notex_config.json')
-		path = getenv(self.CONFIG_PATH_ENV, None)
-		if path:
-			try:
-				with open(path, 'r'):
-					pass
-			except (IOError, FileNotFoundError) as err:
-				self.logger.warn(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
-					'but this could not be opened and "{2:s}" will be used instead. Reason: {3:s}')
-					.format(self.CONFIG_PATH_ENV, path, standard_path, str(err)))
-				return standard_path
-			else:
-				return path
-		else:
-			return standard_path
-
-	def _load_user_config_file(self):
-		"""
-		Load the configuration file set by the user.
+		Update the configuration as specified by the user in a file, with defaults for unspecified values.
 		"""
 		path = self._get_user_config_location()
 		try:
 			with open(path, 'r') as fh:
 				user_conf = load(fp=fh, object_pairs_hook=OrderedDict)
 		except (IOError, FileNotFoundError) as err:
-			# warning('No user config found at "{0:s}" - you can use make_conf to create one (message: {1:s})'
-			# 	.format(path, ']'.join(str(err).split(']')[1:])))
 			user_conf = {'config_file': None}
 		else:
 			user_conf['config_file'] = path
-		return user_conf
+		self._config.update(user_conf)
 
-	def get_config_string(self):
-		return dumps(self._config, indent=4, sort_keys=False)
+	def _add_packages(self):
+		"""
+		Update the configuration based on packages.
+		"""
+		#todo
 
-	# @property
-	# def logger(self):
-	# 	if self._logger is None:
-	# 		self._logger = BasicLogger()
-	# 	return self._logger
-	#
-	# @logger.setter
-	# def logger(self, value):
-	# 	self._logger = value
+	def _add_document_tags(self):
+		"""
+		Update the configuration based on configuration tags in the document.
+		"""
+		#todo
+
+	def _add_cmd_arguments(self):
+		"""
+		Update the configuration based on command line options that have been provided.
+		"""
+		#todo
+
+	def _get_user_config_location(self):
+		"""
+		Get the location that the user configuration is stored at.
+		"""
+		if getenv(self._CONFIG_PATH_ENV, None):
+			path = abspath(getenv(self._CONFIG_PATH_ENV))
+			if path:
+				try:
+					with open(path, 'r'):
+						pass
+				except (IOError, FileNotFoundError) as err:
+					self.logger.warn(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
+						'but this could not be opened and "{2:s}" will be used instead. Reason: {3:s}')
+						.format(self._CONFIG_PATH_ENV, path, self._CONFIG_PATH_DEFAULT, str(err)))
+					return self._CONFIG_PATH_DEFAULT
+				else:
+					return path
+		return self._CONFIG_PATH_DEFAULT
+
+
+class CompileSettings(BaseSettings):
+	_DEFAULT_VALUES_FILE = 'compile_defaults.json'
+	_CONFIG_PATH_DEFAULT = join(user_config_dir('notex'), 'compile_config.json')
+	_CONFIG_PATH_ENV = 'NOTEX_COMPILE_CONFIG'
+
+	def __init__(self):
+		super(CompileSettings, self).__init__()
+		self._add_defaults()
+		self._add_config_file()
+		self._add_packages()
+		self._add_document_tags()
+		self._add_cmd_arguments()
+
+
+class DocumentSettings(BaseSettings):
+	_DEFAULT_VALUES_FILE = 'compile_defaults.json'
+	_CONFIG_PATH_DEFAULT = None
+	_CONFIG_PATH_ENV = None
+
+	def __init__(self):
+		super(DocumentSettings, self).__init__()
+		self._add_defaults()
+		self._add_packages()
+		self._add_document_tags()
 
 

@@ -1,9 +1,16 @@
 
+from logging import Logger
 from sys import stdout, stderr
 from multiprocessing import Lock
 
 
-class BasicLogger:
+# todo: see https://docs.python.org/3/library/logging.html
+
+
+
+
+
+class BasicLogger(Logger):
 	"""
 	Simple parallelism-safe logger that prints to stdout and stderr depending on verbosity.
 	"""
@@ -40,4 +47,8 @@ class BasicLogger:
 		if self.strict:
 			exit(1)
 
-
+	def exception(self, err):
+		"""
+		An exception has been raised.
+		"""
+		#todo: unused

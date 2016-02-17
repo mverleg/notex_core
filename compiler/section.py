@@ -1,12 +1,68 @@
 
+from copy import copy
+from compiler.leaf import MultiThreadedLeaf
+from package import Package
+from packages import PackageList
+from parse_render__lxml.parser import LXML_Parser
 
 
+class Section:
+	"""
+	Handle (load, pre-process, parse, include, arguments, tags, substitutions) a rendered document.
+	"""
+	def __init__(self, path, loader, logger):
+		#todo: depth limit
+		#self.provisional(path=path, loader=loader, logger=logger)
+		#todo tmp
+		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=LXML_Parser())
+		self.soup = self.leaf.get()
+		self.packages = self.get_packages(self.soup, logger=logger)
+
+	def get_packages(self, soup, logger):
+		packages = []
+		pack_tags = soup.find_all('package')
+		for pack_tag in pack_tags:
+			package_args = copy(pack_tag.attrs)
+			assert 'name' in package_args, 'package must specify a name [got "{0:s}"]' \
+				.format('" & "'.join('{0:s}={1:}'.format(k, v) for k, v in pack_tag.attrs.items()))
+			name = package_args.pop('name')
+			version = package_args.pop('version', '==*')
+			print('  load package {0:s}{1:s} with {2:d} arguments'.format(name, version, len(package_args)))
+			# logger.info('  load package {0:s}{1:s} for "{2:s}" with {3:d} arguments'.format(  # todo
+			# 	name, version, path, len(package_args)), level=2)
+			pkg = Package(name=name, version=version, options=package_args).load()
+			packages.append(pkg)
+			pack_tag.extract()
+		return PackageList(packages)
+
+	def do_leaf(self, path, loader, logger):
+		"""
+		Construct a context-guess and go through loading, pre-processing and parsing.
+		"""
+		preproc = ()
+		parser = LXML_Parser()
+		leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
+		leaf.get()
+
+	def final(self, path, loader, logger):
+		"""
+		Use the now-determined context and go through loading, pre-processing and parsing again if needed.
+		"""
+		preproc = ()
+		parser = LXML_Parser()
+		leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
+		leaf.get()
+
+	def get(self):
+		#todo tmp
+		return self.soup.prettify(formatter='minimal')
 
 
 class MultiprocLeaf:  #todo: change to section
 	"""
-	Load and parse an included or rendered document, using a worker process.
+	Load, pre-process and parse an included or rendered document, using a worker process.
 	"""
+	#todo: for multi-process communication, see modular_render or http://stackoverflow.com/a/35351997/723090
 	def __init__(self, path, loader, logger, preproc, parser, depth=0):
 		#todo: how to deal with errors?
 		self.pipe, remote_pipe = Pipe()
