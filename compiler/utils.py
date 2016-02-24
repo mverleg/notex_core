@@ -1,11 +1,11 @@
 
 from genericpath import getsize
-from shutil import copy2
+from shutil import copy2, copytree
 from struct import pack
 from base64 import urlsafe_b64encode
 from hashlib import sha256
-from os import getcwd, chdir, symlink
-from os.path import expanduser
+from os import getcwd, chdir, symlink, makedirs
+from os.path import expanduser, isdir, exists, dirname
 
 
 class cd:
@@ -48,19 +48,28 @@ def hash_file(path):
 	return urlsafe_b64encode(sha2.digest()).decode('ascii')[:-1]
 
 
-def link_or_copy(src, dst, exist_ok=False, follow_symlinks=True):
+def link_or_copy(src, dst, exist_ok=False, follow_symlinks=True, allow_linking=True, create_dirs=True):
 	"""
-	Try to symlink a file, fall back to copying if symlink doesn't work.
+	Try to symlink a file (if allow_linking), fall back to copying if symlink doesn't work.
+	Also works for linking/copying directories, and creates target directories as needed (if create_dirs).
+	Follows symlinks (those tools that support it) if follow_symlinks and silently ignores existing if exist_ok.
 	"""
-	# if system() == 'Linux':
 	try:
-		try:
-			symlink(src, dst)
-		except NotImplementedError:
-			copy2(src, dst, follow_symlinks=follow_symlinks)
-			return False
+		is_dir = isdir(src)
+		if create_dirs and not exists(dirname(dst)):
+			makedirs(dirname(dst), exist_ok=True)
+		if allow_linking:
+			try:
+				symlink(src, dst, target_is_directory=is_dir)
+			except NotImplementedError:
+				""" will copy later """
+			else:
+				return True
+		if is_dir:
+			copytree(src, dst, symlinks=follow_symlinks)
 		else:
-			return True
+			copy2(src, dst, follow_symlinks=follow_symlinks)
+		return False
 	except FileExistsError as err:
 		if not exist_ok:
 			raise err

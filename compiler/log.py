@@ -25,6 +25,9 @@ class BasicLogger(Logger):
 		self.strict = strict
 		self.write_lock = Lock()
 
+	def get_level(self):
+		return self.verbosity
+
 	def info(self, msg, level=1):
 		if level <= self.verbosity:
 			self.write_lock.acquire()
