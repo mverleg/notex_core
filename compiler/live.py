@@ -1,21 +1,45 @@
 
 from argparse import ArgumentParser
+from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, HTTPServer
-from os import getcwd, chdir
-from tempfile import mkdtemp
-from compiler.main import do_compile
+from socketserver import ThreadingMixIn
+from sys import argv
+from os import chdir, makedirs
+from os.path import join
+from compiler.arguments import pre_parse
+from compiler.main import setup_singletons, render_dir
+from compiler.section import Section
+from compiler.utils import hash_str
 
 
-class AutoCompileHTTPServer(HTTPServer):
+class AutoCompileHTTPServer(ThreadingMixIn, HTTPServer):
 	def __init__(self, *args, **kwargs):
-		self.source_dir = getcwd()
-		self.target_dir = mkdtemp(prefix='notex')
-		chdir(self.target_dir)  #todo: is there a better way?
+		self.setup_compiler()
 		super(AutoCompileHTTPServer, self).__init__(*args, **kwargs)
 
-	def process_request(self, request, client_address):
-		do_compile(source=self.source_dir, target=self.target_dir)
-		super(AutoCompileHTTPServer, self).process_request(request, client_address)
+	def setup_compiler(self):
+		pre_opts, rest_args = pre_parse(argv[1:])
+		self.logger, self.compile_conf, self.document_conf, self.cache, self.loader = setup_singletons(opts=pre_opts)
+		self.compile_file = pre_opts.input
+		self.output_dir = join(self.compile_conf.TMP_DIR, 'live', hash_str(self.compile_file)[:8])
+		makedirs(self.output_dir, exist_ok=True, mode=0o700)
+		self.do_compile()
+
+	def do_compile(self):
+		self.last_compile = datetime.now()
+		section = Section(self.compile_file, loader=self.loader, logger=self.logger, cache=self.cache,
+			compile_conf=self.compile_conf, document_conf=self.document_conf)
+		content = section.get()
+		render_dir(packages=section.packages, content=content, target_dir=self.output_dir,
+			offline=True, allow_symlink=True)
+		chdir(self.output_dir)  #todo: is there a better way?
+
+	def process_request(self, socket, client_address):
+		if (datetime.now() - self.last_compile).total_seconds() > 2.0:
+			#todo: this shouldn't move all the static files, it should just serve them from their original location
+			#todo: maybe this would be better in the handler (BaseHTTPRequestHandler.do_GET)
+			self.do_compile()
+		super(AutoCompileHTTPServer, self).process_request(socket, client_address)
 
 
 def server(protocol='HTTP/1.0', port=8000, bind='localhost'):

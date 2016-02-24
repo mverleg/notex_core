@@ -11,5 +11,6 @@ Pip
 	appdirs
 	argparse
     dogpile.cache  (compile)
+    watchdog (for auto-compile)
 
 

@@ -1,9 +1,10 @@
 
 from collections import OrderedDict
 from json import load, dumps
-from os import getenv
+from os import getenv, makedirs
 from os.path import join, dirname, realpath, abspath
 from appdirs import user_config_dir
+from tempfile import gettempdir
 
 
 class BaseSettings:
@@ -15,39 +16,42 @@ class BaseSettings:
 	_CONFIG_PATH_DEFAULT = join(user_config_dir('notex'), 'default_config.json')
 	_CONFIG_PATH_ENV = 'NOTEX_DEFAULT_CONFIG'
 
-	def __init__(self):
+	def __init__(self, logger):
 		"""
 		Set the default configuration values. Should be overridden by subclasses.
 		"""
 		self._code_dir = dirname(realpath(__file__))
-		self._config = OrderedDict()
+		self._logger = logger
+		# self._config = OrderedDict()
 
-	def __getattr__(self, item):
-		"""
-		All public properties (not starting with _) are looked up in config dictionary.
-		"""
-		if not item.startswith('_'):
-			try:
-				return self._config[item]
-			except KeyError:
-				raise
-		return super(BaseSettings, self).__getattr__(item)
+	# def __getattr__(self, item):
+	# 	"""
+	# 	All public properties (not starting with _) are looked up in config dictionary.
+	# 	"""
+	# 	if not item.startswith('_'):
+	# 		try:
+	# 			return self._config[item]
+	# 		except KeyError:
+	# 			raise
+	# 	return super(BaseSettings, self).__getattr__(item)
 
-	def __setattr__(self, item, value):
-		"""
-		All public properties (not starting with _) are stored in config dictionary.
-		"""
-		if not item.startswith('_'):
-			self._config[item] = value
-		super().__setattr__(item, value)
+	# def __setattr__(self, item, value):
+	# 	"""
+	# 	All public properties (not starting with _) are stored in config dictionary.
+	# 	"""
+	# 	if not item.startswith('_'):
+	# 		self._config[item] = value
+	# 	super().__setattr__(item, value)
 
 	def __repr__(self):
 		return '{0:s}'.format(self.__class__.__name__)
 
-	def __str__(self):
-		return dumps(self._config, indent=4, sort_keys=False)
+	def _all(self):
+		return OrderedDict((key, val) for key, val in self.__dict__.items() if not key.startswith('_'))
 
-	#todo: custom json dump?
+	def __str__(self):
+		return dumps(self._all, indent=4, sort_keys=False)
+
 	#todo: hash?
 
 	def _add_defaults(self):
@@ -56,7 +60,9 @@ class BaseSettings:
 		"""
 		with open(join(self._code_dir, self._DEFAULT_VALUES_FILE), 'r') as fh:
 			defaults = load(fp=fh, object_pairs_hook=OrderedDict)
-		self._config.update(defaults)
+		for key, value in defaults:
+			setattr(self, key, value)
+		# self._config.update(defaults)
 
 	def _add_config_file(self):
 		"""
@@ -70,7 +76,8 @@ class BaseSettings:
 			user_conf = {'config_file': None}
 		else:
 			user_conf['config_file'] = path
-		self._config.update(user_conf)
+		for key, value in user_conf.items():
+			setattr(self, key, value)
 
 	def _add_packages(self):
 		"""
@@ -84,7 +91,7 @@ class BaseSettings:
 		"""
 		#todo
 
-	def _add_cmd_arguments(self):
+	def _add_cmd_arguments(self, opts):
 		"""
 		Update the configuration based on command line options that have been provided.
 		"""
@@ -101,7 +108,7 @@ class BaseSettings:
 					with open(path, 'r'):
 						pass
 				except (IOError, FileNotFoundError) as err:
-					self.logger.warn(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
+					self._logger.warn(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
 						'but this could not be opened and "{2:s}" will be used instead. Reason: {3:s}')
 						.format(self._CONFIG_PATH_ENV, path, self._CONFIG_PATH_DEFAULT, str(err)))
 					return self._CONFIG_PATH_DEFAULT
@@ -115,13 +122,15 @@ class CompileSettings(BaseSettings):
 	_CONFIG_PATH_DEFAULT = join(user_config_dir('notex'), 'compile_config.json')
 	_CONFIG_PATH_ENV = 'NOTEX_COMPILE_CONFIG'
 
-	def __init__(self):
-		super(CompileSettings, self).__init__()
+	def __init__(self, opts, *args, **kwargs):
+		self.TMP_DIR = join(gettempdir(), 'notex')
+		makedirs(self.TMP_DIR, exist_ok=True, mode=0o700)
+		super(CompileSettings, self).__init__(*args, **kwargs)
 		self._add_defaults()
 		self._add_config_file()
 		self._add_packages()
 		self._add_document_tags()
-		self._add_cmd_arguments()
+		self._add_cmd_arguments(opts)
 
 
 class DocumentSettings(BaseSettings):
@@ -129,8 +138,8 @@ class DocumentSettings(BaseSettings):
 	_CONFIG_PATH_DEFAULT = None
 	_CONFIG_PATH_ENV = None
 
-	def __init__(self):
-		super(DocumentSettings, self).__init__()
+	def __init__(self, *args, **kwargs):
+		super(DocumentSettings, self).__init__(*args, **kwargs)
 		self._add_defaults()
 		self._add_packages()
 		self._add_document_tags()

@@ -6,7 +6,6 @@ from sys import stderr, stdout
 from os import makedirs
 from os.path import dirname, exists, basename
 from pkg_resources import get_distribution, DistributionNotFound
-from tempfile import tempdir
 from compiler.server import launch_server
 
 
@@ -93,7 +92,7 @@ def parse(args, settings):
 			help='Attempt to merge all dependencies into a single file. This is not always possible, e.g. for large images other than svg.')
 
 	for parser in [compile, live, clean]:
-		parser.add_argument('--tempdir', dest='tempdir', type=str, default=tempdir,
+		parser.add_argument('--tempdir', dest='tempdir', type=str, default=None,
 			help='The directory to store temporary files')
 
 	opts = top_parser.parse_args(args)

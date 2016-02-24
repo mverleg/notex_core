@@ -1,8 +1,8 @@
 
 from copy import copy
 from compiler.leaf import MultiThreadedLeaf
-from package import Package
-from packages import PackageList
+from notexp.package import Package
+from notexp.packages import PackageList
 from parse_render__lxml.parser import LXML_Parser
 
 
@@ -10,15 +10,19 @@ class Section:
 	"""
 	Handle (load, pre-process, parse, include, arguments, tags, substitutions) a rendered document.
 	"""
-	def __init__(self, path, loader, logger):
+	def __init__(self, path, loader, logger, cache, compile_conf, document_conf):
 		#todo: depth limit
 		#self.provisional(path=path, loader=loader, logger=logger)
 		#todo tmp
 		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=LXML_Parser())
 		self.soup = self.leaf.get()
-		self.packages = self.get_packages(self.soup, logger=logger)
+		self.logger = logger
+		self.cache = cache
+		self.compile_conf = compile_conf
+		self.document_conf = document_conf  # unused?
+		self.packages = self.get_packages(self.soup)
 
-	def get_packages(self, soup, logger):
+	def get_packages(self, soup):
 		packages = []
 		pack_tags = soup.find_all('package')
 		for pack_tag in pack_tags:
@@ -30,10 +34,12 @@ class Section:
 			print('  load package {0:s}{1:s} with {2:d} arguments'.format(name, version, len(package_args)))
 			# logger.info('  load package {0:s}{1:s} for "{2:s}" with {3:d} arguments'.format(  # todo
 			# 	name, version, path, len(package_args)), level=2)
-			pkg = Package(name=name, version=version, options=package_args).load()
+			pkg = Package(name=name, version=version, options=package_args, logger=self.logger, cache=self.cache,
+				compile_conf=self.compile_conf).load()
 			packages.append(pkg)
 			pack_tag.extract()
-		return PackageList(packages)
+		return PackageList(packages, logger=self.logger, cache=self.cache, compile_conf=self.compile_conf,
+			document_conf=self.document_conf)
 
 	def do_leaf(self, path, loader, logger):
 		"""
@@ -121,7 +127,7 @@ class MultiprocLeaf:  #todo: change to section
 			for incl in incls:
 				if Leaf._with_src(incl=incl, logger=logger, path=path):
 					sub = MultithreadLeaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
-					                      parser=parser, depth=0)
+										  parser=parser, depth=0)
 					subleafs.append((incl, sub))
 			for incl, sub in subleafs:
 				#todo: I should find some way to not have to parse this
