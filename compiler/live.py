@@ -29,8 +29,7 @@ class AutoCompileHTTPServer(ThreadingMixIn, HTTPServer):
 		self.last_compile = datetime.now()
 		section = Section(self.compile_file, loader=self.loader, logger=self.logger, cache=self.cache,
 			compile_conf=self.compile_conf, document_conf=self.document_conf)
-		content = section.get()
-		render_dir(packages=section.packages, content=content, target_dir=self.output_dir,
+		render_dir(section=section, target_dir=self.output_dir,
 			offline=True, allow_symlink=True)
 		chdir(self.output_dir)  #todo: is there a better way?
 

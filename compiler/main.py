@@ -13,25 +13,21 @@ from compiler.section import Section
 from compiler.utils import cd
 
 
-def render_dir(packages, content, target_dir, *, offline=False, allow_symlink=False):
+def render_dir(section, target_dir, *, offline=False, allow_symlink=False):
 	#todo: This is just one render mode, and should become a package.
+	content = section.get()
+	packages = section.packages
 	with open(packages.get_template(), 'r') as fh:
 		html = fh.read()
 	if exists(target_dir):
 		rmtree(target_dir)
 	mkdir(target_dir)
 	for resource in chain(packages.get_styles(offline=offline), packages.get_scripts(offline=offline),
-			packages.get_static(offline=offline)):
+			packages.get_static(offline=offline), section.get_styles(offline=offline),
+			section.get_scripts(offline=offline), section.get_static(offline=offline)):
 		resource.copy(target_dir, allow_symlink=allow_symlink)
-		# if resource.local_path:
-		# 	#print('external: "{0:s}"'.format(resource.path))
-		# 	pass
-		# else:
-		# 	#print('"{0:s}" -> "{1:s}"'.format(resource.full_path, join(target_dir, resource.path)))
-		# 	makedirs(dirname(join(target_dir, resource.path)), exist_ok=True)
-		# 	copy2(resource.full_path, join(target_dir, resource.path), follow_symlinks=True)
-	styles = '\n\t\t'.join(style.html for style in packages.get_styles())
-	scripts = '\n\t\t'.join(script.html for script in packages.get_scripts())
+	styles = '\n\t\t'.join(style.html for style in chain(packages.get_styles(), section.get_styles()))
+	scripts = '\n\t\t'.join(script.html for script in chain(packages.get_scripts(), section.get_scripts()))
 	document = html.format(content=content, styles=styles, scripts=scripts)
 	with open(join(target_dir, 'index.html'), 'w+') as fh:
 		fh.write(document)
@@ -49,7 +45,6 @@ def setup_singletons(opts):
 	logger.info('load document settings', level=2)
 	cache = DogpileAndFileCache(cache_dir=join(compile_conf.TMP_DIR, 'filecache'))
 	logger.info('created cache binding', level=2)
-	# settings.logger = logger
 	logger.info('create file loader', level=2)
 	loader = SourceLoader(dir_paths=(dirname(realpath(opts.input)),))
 	# parser = LXML_Parser()
@@ -71,9 +66,8 @@ def do_compile(source=None, target=None, offline=True, allow_symlink=False):
 
 		section = Section(pre_opts.input, loader=loader, logger=logger, cache=cache, compile_conf=compile_conf,
 			document_conf=document_conf)
-		content = section.get()
 		target = target or join(getcwd(), 'my_document')
-		render_dir(packages=section.packages, content=content, target_dir=target, offline=offline,
+		render_dir(section=section, target_dir=target, offline=offline,
 			allow_symlink=allow_symlink)
 
 

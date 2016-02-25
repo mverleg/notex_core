@@ -12,6 +12,7 @@ class BaseSettings:
 	This should be extended by specific setting classes (compiler, package manager, document...).
 	They should be considered singletons (it's not enforced).
 	"""
+	# Used to store settings in self._conf with getattr magic, now just stores them on the instance.
 	_DEFAULT_VALUES_FILE = 'defaults.json'
 	_CONFIG_PATH_DEFAULT = join(user_config_dir('notex'), 'default_config.json')
 	_CONFIG_PATH_ENV = 'NOTEX_DEFAULT_CONFIG'
@@ -22,26 +23,6 @@ class BaseSettings:
 		"""
 		self._code_dir = dirname(realpath(__file__))
 		self._logger = logger
-		# self._config = OrderedDict()
-
-	# def __getattr__(self, item):
-	# 	"""
-	# 	All public properties (not starting with _) are looked up in config dictionary.
-	# 	"""
-	# 	if not item.startswith('_'):
-	# 		try:
-	# 			return self._config[item]
-	# 		except KeyError:
-	# 			raise
-	# 	return super(BaseSettings, self).__getattr__(item)
-
-	# def __setattr__(self, item, value):
-	# 	"""
-	# 	All public properties (not starting with _) are stored in config dictionary.
-	# 	"""
-	# 	if not item.startswith('_'):
-	# 		self._config[item] = value
-	# 	super().__setattr__(item, value)
 
 	def __repr__(self):
 		return '{0:s}'.format(self.__class__.__name__)
@@ -62,7 +43,6 @@ class BaseSettings:
 			defaults = load(fp=fh, object_pairs_hook=OrderedDict)
 		for key, value in defaults:
 			setattr(self, key, value)
-		# self._config.update(defaults)
 
 	def _add_config_file(self):
 		"""

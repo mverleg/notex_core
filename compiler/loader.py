@@ -60,7 +60,7 @@ class SourceLoader:
 		match = self.exists(file_path)
 		if match is None:
 			tried = tuple(self.search_paths(file_path))
-			raise SourceFileNotFound('Did not find "{0:s}"; tried "{1:s}"'.format(file_path, '", "'.join(tried)))
+			raise SourceFileNotFound('did not find "{0:s}"; tried "{1:s}"'.format(file_path, '", "'.join(tried)))
 		return match
 
 	def load(self, file_path):

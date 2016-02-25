@@ -8,6 +8,10 @@ from os import getcwd, chdir, symlink, makedirs
 from os.path import expanduser, isdir, exists, dirname
 
 
+class InvalidDocumentError(Exception):
+	""" There was a problem in an input file. """
+
+
 class cd:
 	"""
 	Context manager for changing the current working directory

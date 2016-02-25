@@ -11,7 +11,7 @@ from os.path import basename, join, getsize
 
 class NotexHandler(SimpleHTTPRequestHandler):
 	def do_GET(self):
-		path = self.path  #.rstrip('/')
+		path = self.path
 		if path in ('', '/'):
 			self.serve_document(path)
 		elif path.split('.')[-1] in ('ico', 'png', 'jpg', 'gif', 'css', 'js'):

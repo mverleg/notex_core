@@ -1,8 +1,12 @@
 
+from inspect import signature
 from copy import copy
+from os.path import dirname, basename
 from compiler.leaf import MultiThreadedLeaf
+from compiler.utils import hash_str, InvalidDocumentError
 from notexp.package import Package
 from notexp.packages import PackageList
+from notexp.resource import StaticResource, StyleResource, ScriptResource, get_resources, Resource
 from parse_render__lxml.parser import LXML_Parser
 
 
@@ -10,10 +14,15 @@ class Section:
 	"""
 	Handle (load, pre-process, parse, include, arguments, tags, substitutions) a rendered document.
 	"""
+	resource_types = {
+		'static': StaticResource,
+		'styles': StyleResource,
+		'scripts': ScriptResource,
+	}
+
 	def __init__(self, path, loader, logger, cache, compile_conf, document_conf):
 		#todo: depth limit
-		#self.provisional(path=path, loader=loader, logger=logger)
-		#todo tmp
+		self.path = path
 		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=LXML_Parser())
 		self.soup = self.leaf.get()
 		self.logger = logger
@@ -21,25 +30,46 @@ class Section:
 		self.compile_conf = compile_conf
 		self.document_conf = document_conf  # unused?
 		self.packages = self.get_packages(self.soup)
+		self.styles, self.scripts, self.static = self.get_resources(self.soup)
 
 	def get_packages(self, soup):
 		packages = []
 		pack_tags = soup.find_all('package')
 		for pack_tag in pack_tags:
 			package_args = copy(pack_tag.attrs)
-			assert 'name' in package_args, 'package must specify a name [got "{0:s}"]' \
+			assert 'name' in package_args, '<package> must specify a name [got "{0:s}"]' \
 				.format('" & "'.join('{0:s}={1:}'.format(k, v) for k, v in pack_tag.attrs.items()))
 			name = package_args.pop('name')
 			version = package_args.pop('version', '==*')
 			print('  load package {0:s}{1:s} with {2:d} arguments'.format(name, version, len(package_args)))
-			# logger.info('  load package {0:s}{1:s} for "{2:s}" with {3:d} arguments'.format(  # todo
-			# 	name, version, path, len(package_args)), level=2)
 			pkg = Package(name=name, version=version, options=package_args, logger=self.logger, cache=self.cache,
 				compile_conf=self.compile_conf).load()
 			packages.append(pkg)
 			pack_tag.extract()
 		return PackageList(packages, logger=self.logger, cache=self.cache, compile_conf=self.compile_conf,
 			document_conf=self.document_conf)
+
+	def get_resources(self, soup):
+		conf = {nm: [] for nm in self.resource_types.keys()}
+		resource_tags = soup.find_all('resource')
+		allowed_attrs = set(param.name for param in signature(Resource.__init__).parameters.values() if param.kind == param.KEYWORD_ONLY)
+		for resource_tag in resource_tags:
+			resource = copy(resource_tag.attrs)
+			resource_type = resource.pop('type', 'static')
+			if resource_type not in self.resource_types:
+				raise InvalidDocumentError('<resource> type must be one of {0:} if specified'
+					.format(', '.join(self.resource_types.keys())))
+			if resource.keys() - allowed_attrs:
+				raise InvalidDocumentError(('did not recognize these attributes given to <resource>: [{0:s}]; known arguments'
+					' are [{1:s}]').format(', '.join(resource.keys() - allowed_attrs), ', '.join(allowed_attrs)))
+			conf[resource_type].append(resource)
+			resource_tag.extract()
+		section_name = 'section_{0:8s}'.format(hash_str(self.path))
+		section_dir = dirname(self.path)
+		return get_resources(group_name=section_name, path=section_dir,
+			logger=self.logger, cache=self.cache, compile_conf=self.compile_conf, style_conf=conf['styles'],
+			script_conf=conf['scripts'], static_conf=conf['static'], note='from section {0:s}'.format(basename(self.path))
+		)[1:]
 
 	def do_leaf(self, path, loader, logger):
 		"""
@@ -63,8 +93,28 @@ class Section:
 		#todo tmp
 		return self.soup.prettify(formatter='minimal')
 
+	def get_template(self):
+		raise NotImplementedError('Section objects do not have templates, just styles, scripts and static resources')
 
-class MultiprocLeaf:  #todo: change to section
+	def _get_resources(self, attr_name, offline):
+		resources = []
+		for res in getattr(self, attr_name):
+			if offline:
+				res.make_offline()
+			resources.append(res)
+		return resources
+
+	def get_styles(self, offline=False):
+		return self._get_resources('styles', offline=offline)
+
+	def get_scripts(self, offline=False):
+		return self._get_resources('scripts', offline=offline)
+
+	def get_static(self, offline=False):
+		return self._get_resources('static', offline=offline)
+
+
+class UsefulButUnusedExampleForMultiprocessing:  #todo: change to section
 	"""
 	Load, pre-process and parse an included or rendered document, using a worker process.
 	"""
@@ -151,3 +201,5 @@ class MultiprocLeaf:  #todo: change to section
 	def _stop_worker(worker):
 		if worker and worker.is_alive():
 			worker.terminate()
+
+

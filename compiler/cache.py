@@ -46,10 +46,11 @@ class DogpileAndFileCache:
 	def check_cleanup_files(self, cleanup_deadtime=120):
 		"""
 		Check if a cleanup of files is necessary based on cleanup_deadtime (seconds).
+
+		First update timestamp, then run the task, to avoid dogpile effect.
 		"""
 		cudt = self.dogpile.get('dogpile_file_cache_last_cleanup')
 		if not cudt or time() - cudt > cleanup_deadtime:
-			# First update timestamp, then run the task, to prevent dogpile effect.
 			self.dogpile.set('dogpile_file_cache_last_cleanup', time())
 			self.cleanup_files()
 
@@ -135,6 +136,5 @@ if __name__ == '__main__':
 	print('2', cache.get_or_create_file(url='http://php.markv.nl/public/ggg.jpg'))
 	print('3', cache.delete_file(url='http://php.markv.nl/public/ggg.jpg'))
 	print('4', cache.get_or_create_file(url='http://php.markv.nl/public/ggg.jpg'))
-	# works, also between sessions
 
 

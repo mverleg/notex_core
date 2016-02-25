@@ -7,9 +7,6 @@ from multiprocessing import Lock
 # todo: see https://docs.python.org/3/library/logging.html
 
 
-
-
-
 class BasicLogger(Logger):
 	"""
 	Simple parallelism-safe logger that prints to stdout and stderr depending on verbosity.
