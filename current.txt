@@ -1,7 +1,0 @@
-
-- Make logging work (process_logging.py & log.py)
-- Make Sections work (modular_render.py)
-- Should there be a loader for static files? They're supposed to be in a single place so probably not, it already works fine.
-- See compile graph in documentation
-
-

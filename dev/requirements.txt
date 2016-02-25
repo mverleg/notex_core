@@ -12,5 +12,6 @@ Pip
 	argparse
     dogpile.cache  (compile)
     watchdog (for auto-compile)
+    css-html-js-minify
 
 

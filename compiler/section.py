@@ -7,7 +7,7 @@ from compiler.utils import hash_str, InvalidDocumentError
 from notexp.package import Package
 from notexp.packages import PackageList
 from notexp.resource import StaticResource, StyleResource, ScriptResource, get_resources, Resource
-from parse_render__lxml.parser import LXML_Parser
+from parse_render_lxml.parser import LXML_Parser
 
 
 class Section:
@@ -96,22 +96,24 @@ class Section:
 	def get_template(self):
 		raise NotImplementedError('Section objects do not have templates, just styles, scripts and static resources')
 
-	def _get_resources(self, attr_name, offline):
+	def _get_resources(self, attr_name, offline, minify):
 		resources = []
-		for res in getattr(self, attr_name):
+		for resource in getattr(self, attr_name):
 			if offline:
-				res.make_offline()
-			resources.append(res)
+				resource.make_offline()
+			if minify:
+				resource.minify()
+			resources.append(resource)
 		return resources
 
-	def get_styles(self, offline=False):
-		return self._get_resources('styles', offline=offline)
+	def get_styles(self, offline=False, minify=False):
+		return self._get_resources('styles', offline=offline, minify=minify)
 
-	def get_scripts(self, offline=False):
-		return self._get_resources('scripts', offline=offline)
+	def get_scripts(self, offline=False, minify=False):
+		return self._get_resources('scripts', offline=offline, minify=minify)
 
-	def get_static(self, offline=False):
-		return self._get_resources('static', offline=offline)
+	def get_static(self, offline=False, minify=False):
+		return self._get_resources('static', offline=offline, minify=minify)
 
 
 class UsefulButUnusedExampleForMultiprocessing:  #todo: change to section

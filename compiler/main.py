@@ -13,18 +13,22 @@ from compiler.section import Section
 from compiler.utils import cd
 
 
-def render_dir(section, target_dir, *, offline=False, allow_symlink=False):
+def render_dir(section, target_dir, *, offline=True, minify=True, allow_symlink=False, remove_existing=False):
 	#todo: This is just one render mode, and should become a package.
 	content = section.get()
 	packages = section.packages
 	with open(packages.get_template(), 'r') as fh:
 		html = fh.read()
 	if exists(target_dir):
-		rmtree(target_dir)
-	mkdir(target_dir)
-	for resource in chain(packages.get_styles(offline=offline), packages.get_scripts(offline=offline),
-			packages.get_static(offline=offline), section.get_styles(offline=offline),
-			section.get_scripts(offline=offline), section.get_static(offline=offline)):
+		if remove_existing:
+			rmtree(target_dir)
+	else:
+		mkdir(target_dir)
+	modes = dict(offline=offline, minify=minify)
+	for resource in chain(packages.get_styles(**modes), packages.get_scripts(**modes),
+			packages.get_static(**modes), section.get_styles(**modes),
+			section.get_scripts(**modes), section.get_static(**modes)):
+		#todo: this could be parallel (and it's IO that's pretty slow on new documents)
 		resource.copy(target_dir, allow_symlink=allow_symlink)
 	styles = '\n\t\t'.join(style.html for style in chain(packages.get_styles(), section.get_styles()))
 	scripts = '\n\t\t'.join(script.html for script in chain(packages.get_scripts(), section.get_scripts()))

@@ -22,6 +22,7 @@ class AutoCompileHTTPServer(ThreadingMixIn, HTTPServer):
 		self.logger, self.compile_conf, self.document_conf, self.cache, self.loader = setup_singletons(opts=pre_opts)
 		self.compile_file = pre_opts.input
 		self.output_dir = join(self.compile_conf.TMP_DIR, 'live', hash_str(self.compile_file)[:8])
+		self.logger.info('live directory is {0:s}'.format(self.output_dir), level=1)
 		makedirs(self.output_dir, exist_ok=True, mode=0o700)
 		self.do_compile()
 
@@ -30,11 +31,12 @@ class AutoCompileHTTPServer(ThreadingMixIn, HTTPServer):
 		section = Section(self.compile_file, loader=self.loader, logger=self.logger, cache=self.cache,
 			compile_conf=self.compile_conf, document_conf=self.document_conf)
 		render_dir(section=section, target_dir=self.output_dir,
-			offline=True, allow_symlink=True)
+			offline=True, minify=True, allow_symlink=True)
 		chdir(self.output_dir)  #todo: is there a better way?
 
 	def process_request(self, socket, client_address):
-		if (datetime.now() - self.last_compile).total_seconds() > 2.0:
+		if (datetime.now() - self.last_compile).total_seconds() > 5.0:
+			#todo: should somehow not recompile until all requests including static files have completed (like only reload on html files)
 			#todo: this shouldn't move all the static files, it should just serve them from their original location
 			#todo: maybe this would be better in the handler (BaseHTTPRequestHandler.do_GET)
 			self.do_compile()

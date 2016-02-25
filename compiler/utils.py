@@ -1,10 +1,10 @@
 
 from genericpath import getsize
-from shutil import copy2, copytree
+from shutil import copy2, copytree, rmtree
 from struct import pack
 from base64 import urlsafe_b64encode
 from hashlib import sha256
-from os import getcwd, chdir, symlink, makedirs
+from os import getcwd, chdir, symlink, makedirs, remove
 from os.path import expanduser, isdir, exists, dirname
 
 
@@ -28,7 +28,17 @@ class cd:
 		chdir(self.savedPath)
 
 
+def hash_int(nr):
+	"""
+	Non-cryptographic hash of an integer number (for example a timestamp or the output of python's hash()).
+	"""
+	return urlsafe_b64encode(pack('=q', int(nr))).decode('ascii').rstrip('=').rstrip('A')
+
+
 def hash_str(text):
+	"""
+	Take a hash of a string.
+	"""
 	sha2 = sha256()
 	sha2.update(text.encode('ascii'))
 	return urlsafe_b64encode(sha2.digest()).decode('ascii')[:-1]
@@ -52,7 +62,7 @@ def hash_file(path):
 	return urlsafe_b64encode(sha2.digest()).decode('ascii')[:-1]
 
 
-def link_or_copy(src, dst, exist_ok=False, follow_symlinks=True, allow_linking=True, create_dirs=True):
+def link_or_copy(src, dst, *, allow_overwrite=False, exist_ok=False, follow_symlinks=True, allow_linking=True, create_dirs=True):
 	"""
 	Try to symlink a file (if allow_linking), fall back to copying if symlink doesn't work.
 	Also works for linking/copying directories, and creates target directories as needed (if create_dirs).
@@ -60,8 +70,13 @@ def link_or_copy(src, dst, exist_ok=False, follow_symlinks=True, allow_linking=T
 	"""
 	try:
 		is_dir = isdir(src)
-		if create_dirs and not exists(dirname(dst)):
+		if create_dirs and dirname(dst) and not exists(dirname(dst)):
 			makedirs(dirname(dst), exist_ok=True)
+		if allow_overwrite and exists(dst):
+			if is_dir:
+				rmtree(dst)
+			else:
+				remove(dst)
 		if allow_linking:
 			try:
 				symlink(src, dst, target_is_directory=is_dir)
