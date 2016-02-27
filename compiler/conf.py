@@ -1,4 +1,4 @@
-
+import sys
 from collections import OrderedDict
 from json import load, dumps
 from os import getenv, makedirs
@@ -102,15 +102,25 @@ class CompileSettings(BaseSettings):
 	_CONFIG_PATH_DEFAULT = join(user_config_dir('notex'), 'compile_config.json')
 	_CONFIG_PATH_ENV = 'NOTEX_COMPILE_CONFIG'
 
-	def __init__(self, opts, *args, **kwargs):
+	def __init__(self, opts, *args, session, **kwargs):
 		self.TMP_DIR = join(gettempdir(), 'notex')
 		makedirs(self.TMP_DIR, exist_ok=True, mode=0o700)
 		super(CompileSettings, self).__init__(*args, **kwargs)
+		self.start_session(session)
 		self._add_defaults()
 		self._add_config_file()
 		self._add_packages()
 		self._add_document_tags()
 		self._add_cmd_arguments(opts)
+
+	def start_session(self, session):
+		"""
+		Session is for one document being compiled, not necessarily one run.
+		"""
+		self.session = session
+		self.PACKAGE_DIR = join(self.TMP_DIR, 'packages', self.session[:8])
+		makedirs(self.PACKAGE_DIR, exist_ok=True, mode=0o700)
+		sys.path.append(self.PACKAGE_DIR)
 
 
 class DocumentSettings(BaseSettings):

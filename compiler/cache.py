@@ -1,11 +1,12 @@
 
-from time import time
 from glob import iglob
+from time import time
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 from dogpile_cache_autoselect import auto_select_backend
 from os import makedirs, remove, chmod
 from os.path import join, getmtime, isfile, exists
+from shutil import rmtree
 from tempfile import gettempdir
 from compiler.utils import hash_str, hash_int
 
@@ -115,7 +116,7 @@ class DogpileAndFileCache:
 		Cache a file (download it from a url and store it somewhere until it expires).
 		"""
 		key = self.get_file_cache_key(url=url, func=func, rzip=rzip, dependencies=dependencies, extra=extra)
-		print('\n*****\n   RECREATING CACHE FOR {0:}\n   {1:}\n*****\n'.format(key, self.get_func_str(func) if func else '??'))
+		# print('\n*****\n   RECREATING CACHE FOR {0:}\n   {1:}\n*****\n'.format(key, self.get_func_str(func) if func else '??'))
 		if url:
 			cached_path = join(self.file_dir, self.filename_mangler(url))
 			urlretrieve(url, cached_path)
@@ -145,7 +146,10 @@ class DogpileAndFileCache:
 			if time() - getmtime(found) < self.file_expiration_time:
 				return found
 			else:
-				remove(found)
+				try:
+					remove(found)
+				except IsADirectoryError:
+					rmtree(found)
 				return None
 		else:
 			return None

@@ -35,10 +35,10 @@ The process
                 "provisional arguments" -> "provisional pre-process"
                 "provisional parse" -> "provisional modules"
                 "provisional parse" -> "provisional settings"
-                "provisional out" [style=invis,height=0,label=""]
-                "provisional includes" -> "provisional out" [dir=none]
-                "provisional modules"  -> "provisional out" [dir=none]
-                "provisional settings" -> "provisional out" [dir=none]
+                "provisional compile" [label="compile"]
+                "provisional includes" -> "provisional compile" [dir=none]
+                "provisional modules"  -> "provisional compile" [dir=none]
+                "provisional settings" -> "provisional compile" [dir=none]
             }
             subgraph cluster_final {
                 label="real context"
@@ -62,14 +62,14 @@ The process
                 "final arguments" -> "final pre-process"
                 "final parse" -> "final modules"
                 "final parse" -> "final settings"
-                "final out" [style=invis,height=0,label=""]
-                "final includes" -> "final out" [dir=none]
-                "final modules"  -> "final out" [dir=none]
-                "final settings" -> "final out" [dir=none]
+                "final compile" [label="compile"]
+                "final includes" -> "final compile" [dir=none]
+                "final modules"  -> "final compile" [dir=none]
+                "final settings" -> "final compile" [dir=none]
             }
-            "provisional out" -> "final arguments" [label="context changed"]
-            "provisional out" -> "find renders" [label="context unchanged"]
-            "final out" -> "find renders"
+            "provisional compile" -> "final arguments" [label="context changed"]
+            "provisional compile" -> "find renders" [label="context unchanged"]
+            "final compile" -> "find renders"
             "render A" [peripheries=2,color=gray]
             "render B" [peripheries=2,color=gray]
             "find renders" -> "render A" [arrowname=crow]

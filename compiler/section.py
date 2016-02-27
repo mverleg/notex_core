@@ -23,12 +23,19 @@ class Section:
 	def __init__(self, path, loader, logger, cache, compile_conf, document_conf):
 		#todo: depth limit
 		self.path = path
-		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=LXML_Parser())
-		self.soup = self.leaf.get()
 		self.logger = logger
 		self.cache = cache
 		self.compile_conf = compile_conf
 		self.document_conf = document_conf  # unused?
+		self.logger.info('first round for section "{0:s}"'.format(path), level=1)
+		pre_leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(), parser=LXML_Parser())
+		pre_soup = pre_leaf.get()
+		pre_packages = self.get_packages(pre_soup)
+		preproc = tuple(pre_packages.yield_pre_processors())
+		#todo: it'd be better if the pre-processing was iterative instead of two times? with a limit of course
+		self.logger.info('second round for section "{0:s}"'.format(path), level=1)
+		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=preproc, parser=LXML_Parser())
+		self.soup = self.leaf.get()
 		self.packages = self.get_packages(self.soup)
 		self.styles, self.scripts, self.static = self.get_resources(self.soup)
 
@@ -77,43 +84,44 @@ class Section:
 		"""
 		preproc = ()
 		parser = LXML_Parser()
-		leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
+		leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(), parser=parser)
 		leaf.get()
 
-	def final(self, path, loader, logger):
-		"""
-		Use the now-determined context and go through loading, pre-processing and parsing again if needed.
-		"""
-		preproc = ()
-		parser = LXML_Parser()
-		leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, preproc=(), parser=parser)
-		leaf.get()
+	# def final(self, path, loader, logger):
+	# 	"""
+	# 	Use the now-determined context and go through loading, pre-processing and parsing again if needed.
+	# 	"""
+	# 	preproc = ()
+	# 	parser = LXML_Parser()
+	# 	leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(), parser=parser)
+	# 	leaf.get()
 
 	def get(self):
 		#todo tmp
-		return self.soup.prettify(formatter='minimal')
+		for compiler in self.packages.yield_compilers():
+			self.soup = compiler(self.soup)
+		renderer = self.packages.get_renderer()
+		return renderer.render(self.soup)
 
 	def get_template(self):
 		raise NotImplementedError('Section objects do not have templates, just styles, scripts and static resources')
 
-	def _get_resources(self, attr_name, offline, minify):
-		resources = []
+	def _yield_resources(self, attr_name, offline, minify):
 		for resource in getattr(self, attr_name):
 			if offline:
 				resource.make_offline()
 			if minify:
 				resource.minify()
-			resources.append(resource)
-		return resources
+			yield resource
 
-	def get_styles(self, offline=False, minify=False):
-		return self._get_resources('styles', offline=offline, minify=minify)
+	def yield_styles(self, offline=False, minify=False):
+		return self._yield_resources('styles', offline=offline, minify=minify)
 
-	def get_scripts(self, offline=False, minify=False):
-		return self._get_resources('scripts', offline=offline, minify=minify)
+	def yield_scripts(self, offline=False, minify=False):
+		return self._yield_resources('scripts', offline=offline, minify=minify)
 
-	def get_static(self, offline=False, minify=False):
-		return self._get_resources('static', offline=offline, minify=minify)
+	def yield_static(self, offline=False, minify=False):
+		return self._yield_resources('static', offline=offline, minify=minify)
 
 
 class UsefulButUnusedExampleForMultiprocessing:  #todo: change to section
@@ -167,7 +175,7 @@ class UsefulButUnusedExampleForMultiprocessing:  #todo: change to section
 		Load, pre-process and parse an included file (leaf) and recursively load any other leafs.
 		This should be run in a subprocess or thread, communicating through `pipe`.
 		"""
-		soup = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
+		soup = Leaf._get_single(path=path, logger=logger, loader=loader, pre_processors=preproc, parser=parser, depth=depth)
 
 		"""
 		Includes

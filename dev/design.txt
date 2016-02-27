@@ -66,6 +66,7 @@ Maybe never:
 
 
 Considerations:
+- For Leaf and Section, make a find_all that starts jobs immediately.
 - Restructure the file loader to use promises (start loading the file in a thread and returns it when actually needed).
 - Figure out where/how to use caching; caching for Documents should rely recursively on package versions and file modified times, but possinbly also expose other structure.
 - Should static files be an app, or be treated differently? It has an effect on caching. But there may be future different statics (so should be flexible).

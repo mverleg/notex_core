@@ -1,5 +1,7 @@
 
+import sys
 from genericpath import getsize
+from importlib import import_module
 from shutil import copy2, copytree, rmtree
 from struct import pack
 from base64 import urlsafe_b64encode
@@ -26,6 +28,41 @@ class cd:
 
 	def __exit__(self, etype, value, traceback):
 		chdir(self.savedPath)
+
+
+class pypath_unused:  #todo (unused)
+	"""
+	Pythonpath changer (for importing from special places).
+
+	Also protects pythonpath from changes, which are reverted after the `with` block.
+	"""
+	def __init__(self, with_path):
+		self.with_path = with_path
+
+	def __enter__(self):
+		self.old_path = sys.path
+		sys.path = self.with_path
+
+	def __exit__(self, etype, value, traceback):
+		sys.path = self.old_path
+
+
+def import_obj(import_path):
+	"""
+	Import an object, e.g. for `dir.file.func` it will import module `dir.file` and return the `func` object.
+	"""
+	mod_path, obj_name = import_path.rsplit('.', maxsplit=1)
+	try:
+		mod = import_module(mod_path)
+	except ImportError as err:
+		raise ImportError(('tried to import module "{0:s}" based on import_obj("{1:s}") in directory "{3:s}", '
+			'but encountered this error: {2:}').format(mod_path, import_path, err, getcwd()))
+	try:
+		obj = getattr(mod, obj_name)
+	except AttributeError as err:
+		raise ImportError(('tried to import object "{0:s}" based on import_obj("{1:s}"); the module was imported '
+			'but it has no object named {0:s} (error: {2:})').format(obj_name, import_path, err))
+	return obj
 
 
 def hash_int(nr):

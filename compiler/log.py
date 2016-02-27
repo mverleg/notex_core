@@ -2,9 +2,22 @@
 from logging import Logger
 from sys import stdout, stderr
 from multiprocessing import Lock
+from time import time
 
 
 # todo: see https://docs.python.org/3/library/logging.html
+
+# todo: the logger should also be able to get timer messages, which are logged in a separate file
+
+
+class Ticker:  # todo: tmp
+	def __init__(self):
+		self.t = time()
+
+	def __call__(self):
+		dt = time() - self.t
+		self.t = time()
+		return 1000 * dt
 
 
 class BasicLogger(Logger):

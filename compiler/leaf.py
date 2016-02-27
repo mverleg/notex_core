@@ -6,14 +6,14 @@ class Leaf:
 	"""
 	Load and parse an included or rendered document.
 	"""
-	def __init__(self, path, loader, logger, preproc, parser, depth=0):
-		self.soup = self._load(path=path, loader=loader, logger=logger, preproc=preproc, parser=parser, depth=depth)
+	def __init__(self, path, loader, logger, pre_processors, parser, depth=0):
+		self.soup = self._load(path=path, loader=loader, logger=logger, pre_processors=pre_processors, parser=parser, depth=depth)
 
 	def get(self):
 		return self.soup
 
 	@staticmethod
-	def _get_single(path, logger, loader, preproc, parser, depth):
+	def _get_single(path, logger, loader, pre_processors, parser, depth):
 		"""
 		Load and pre-process a single source file.
 		"""
@@ -21,9 +21,11 @@ class Leaf:
 		content = loader.load(path)
 
 		""" Pre-processing """
-		for pre_processor in preproc:
-			logger.info(' {2:s}pre-process "{0:s}" using "{1:s}"'.format(path, pre_processor, ' ' * depth), level=2)
+		for pre_processor in pre_processors:
+			logger.info(' {2:s}pre-process "{0:s}" using "{1:}"'.format(path, pre_processor, ' ' * depth), level=2)
 			content = pre_processor(content)
+			assert isinstance(content, str), 'pre-processor "{0:}" returned a non-string object {1:}'.format(
+				pre_processor, content)
 
 		""" Parse. """
 		logger.info(' {1:s}parse "{0:s}"'.format(path, ' ' * depth), level=2)
@@ -47,20 +49,20 @@ class Leaf:
 		return True
 
 	@staticmethod
-	def _load(path, logger, loader, preproc, parser, depth):
+	def _load(path, logger, loader, pre_processors, parser, depth):
 		"""
 		Load, pre-process and parse an included file (leaf) and recursively load any other leafs.
 		"""
-		""" Load & preproc this file. """
-		soup = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
+		""" Load & pre-process this file. """
+		soup = Leaf._get_single(path=path, logger=logger, loader=loader, pre_processors=pre_processors, parser=parser, depth=depth)
 
 		""" Handle includes. """
 		incls = soup.find_all('include')
 		if not Leaf._depth_limit(incls=incls, logger=logger, depth=depth):
 			for incl in incls:
 				if Leaf._with_src(incl=incl, logger=logger, path=path):
-					sub = Leaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
-						parser=parser, depth=depth + 1)
+					sub = Leaf(path=incl.attrs['src'], loader=loader, logger=logger, pre_processors=pre_processors,
+					           parser=parser, depth=depth + 1)
 					incl.replace_with(sub.get())
 
 		""" Return soup. """
@@ -71,14 +73,14 @@ class MultiThreadedLeaf:
 	"""
 	Load and parse an included or rendered document.
 	"""
-	def __init__(self, path, loader, logger, preproc, parser, depth=0, incl_dict=None):
+	def __init__(self, path, loader, logger, pre_processors, parser, depth=0, incl_dict=None):
 		if incl_dict is None:
 			incl_dict = {}
 		self.incl_dict = incl_dict
 		self.path = path
 		self.depth = depth
 		self._worker = Thread(target=self._load_async, kwargs=dict(path=self.path, logger=logger, loader=loader,
-			preproc=preproc, parser=parser, depth=self.depth, incl_dict=incl_dict), daemon=True)
+			pre_processors=pre_processors, parser=parser, depth=self.depth, incl_dict=incl_dict), daemon=True)
 		self._worker.start()
 		self.soup = None
 
@@ -106,7 +108,7 @@ class MultiThreadedLeaf:
 		return soup
 
 	@staticmethod
-	def _load_async(path, logger, loader, preproc, parser, depth, incl_dict):
+	def _load_async(path, logger, loader, pre_processors, parser, depth, incl_dict):
 		"""
 		Load, pre-process and parse an included file (leaf). Recursively load other leafs but store them in a dict
 		as updating the main tree concurrently might cause problems.
@@ -117,8 +119,8 @@ class MultiThreadedLeaf:
 			return
 		incl_dict[path] = None
 
-		""" Load & preproc this file. """
-		soup = Leaf._get_single(path=path, logger=logger, loader=loader, preproc=preproc, parser=parser, depth=depth)
+		""" Load & pre-process this file. """
+		soup = Leaf._get_single(path=path, logger=logger, loader=loader, pre_processors=pre_processors, parser=parser, depth=depth)
 
 		""" Handle includes. """
 		incls = soup.find_all('include')
@@ -126,8 +128,8 @@ class MultiThreadedLeaf:
 		if not Leaf._depth_limit(incls=incls, logger=logger, depth=depth):
 			for incl in incls:
 				if Leaf._with_src(incl=incl, logger=logger, path=path):
-					sub = MultiThreadedLeaf(path=incl.attrs['src'], loader=loader, logger=logger, preproc=preproc,
-						parser=parser, depth=depth + 1, incl_dict=incl_dict)
+					sub = MultiThreadedLeaf(path=incl.attrs['src'], loader=loader, logger=logger, pre_processors=pre_processors,
+					                        parser=parser, depth=depth + 1, incl_dict=incl_dict)
 					subleafs.append(sub)
 
 		""" Add soup. """

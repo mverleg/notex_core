@@ -50,7 +50,7 @@ def server(protocol='HTTP/1.0', port=8000, bind='localhost'):
 	httpd = AutoCompileHTTPServer(server_address, SimpleHTTPRequestHandler)
 
 	sa = httpd.socket.getsockname()
-	print('Serving HTTP on', sa[0], 'port', sa[1], '...')
+	print('Site online at http://{0:s}:{1:d}'.format(bind, port))
 	try:
 		httpd.serve_forever()
 	except KeyboardInterrupt:

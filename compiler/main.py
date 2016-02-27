@@ -1,4 +1,6 @@
 
+from time import time
+t = time()
 from itertools import chain
 from sys import argv
 from os import mkdir, getcwd
@@ -7,10 +9,12 @@ from shutil import rmtree
 from compiler.arguments import pre_parse
 from compiler.cache import DogpileAndFileCache
 from compiler.conf import CompileSettings, DocumentSettings
-from compiler.log import BasicLogger
+from compiler.log import BasicLogger, Ticker
 from compiler.loader import SourceLoader
 from compiler.section import Section
-from compiler.utils import cd
+from compiler.utils import cd, hash_str
+
+print('{1:s} imports took {0:.0f}ms'.format(1000 * (time() - t), __name__))
 
 
 def render_dir(section, target_dir, *, offline=True, minify=True, allow_symlink=False, remove_existing=False):
@@ -25,13 +29,13 @@ def render_dir(section, target_dir, *, offline=True, minify=True, allow_symlink=
 	else:
 		mkdir(target_dir)
 	modes = dict(offline=offline, minify=minify)
-	for resource in chain(packages.get_styles(**modes), packages.get_scripts(**modes),
-			packages.get_static(**modes), section.get_styles(**modes),
-			section.get_scripts(**modes), section.get_static(**modes)):
+	for resource in chain(packages.yield_styles(**modes), packages.yield_scripts(**modes),
+			packages.yield_static(**modes), section.yield_styles(**modes),
+			section.yield_scripts(**modes), section.yield_static(**modes)):
 		#todo: this could be parallel (and it's IO that's pretty slow on new documents)
 		resource.copy(target_dir, allow_symlink=allow_symlink)
-	styles = '\n\t\t'.join(style.html for style in chain(packages.get_styles(), section.get_styles()))
-	scripts = '\n\t\t'.join(script.html for script in chain(packages.get_scripts(), section.get_scripts()))
+	styles = '\n\t\t'.join(style.html for style in chain(packages.yield_styles(), section.yield_styles()))
+	scripts = '\n\t\t'.join(script.html for script in chain(packages.yield_scripts(), section.yield_scripts()))
 	document = html.format(content=content, styles=styles, scripts=scripts)
 	with open(join(target_dir, 'index.html'), 'w+') as fh:
 		fh.write(document)
@@ -41,16 +45,18 @@ def setup_singletons(opts):
 	"""
 	Configure some singleton configuration classes.
 	"""
+	tick = Ticker()
 	logger = BasicLogger(verbosity=opts.verbosity)
-	logger.info('created logger', level=2)
-	compile_conf = CompileSettings(logger=logger, opts=opts)
-	logger.info('load compile settings', level=2)
+	logger.info('created logger ({0:.0f}ms)'.format(tick()), level=2)
+	session_hash = hash_str(opts.input)
+	compile_conf = CompileSettings(logger=logger, opts=opts, session=session_hash)
+	logger.info('load compile settings ({0:.0f}ms)'.format(tick()), level=2)
 	document_conf = DocumentSettings(logger=logger)
-	logger.info('load document settings', level=2)
+	logger.info('load document settings ({0:.0f}ms)'.format(tick()), level=2)
 	cache = DogpileAndFileCache(cache_dir=join(compile_conf.TMP_DIR, 'filecache'))
-	logger.info('created cache binding', level=2)
-	logger.info('create file loader', level=2)
+	logger.info('created cache binding ({0:.0f}ms)'.format(tick()), level=2)
 	loader = SourceLoader(dir_paths=(dirname(realpath(opts.input)),))
+	logger.info('create file loader ({0:.0f}ms)'.format(tick()), level=2)
 	# parser = LXML_Parser()
 	return logger, compile_conf, document_conf, cache, loader
 
