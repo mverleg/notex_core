@@ -1,3 +1,4 @@
+
 import sys
 from collections import OrderedDict
 from json import load, dumps
@@ -21,8 +22,8 @@ class BaseSettings:
 		"""
 		Set the default configuration values. Should be overridden by subclasses.
 		"""
-		self._code_dir = dirname(realpath(__file__))
-		self._logger = logger
+		self.code_dir = dirname(realpath(__file__))
+		self.logger = logger
 
 	def __repr__(self):
 		return '{0:s}'.format(self.__class__.__name__)
@@ -39,7 +40,7 @@ class BaseSettings:
 		"""
 		Set the defaults for all configuration options that have defaults.
 		"""
-		with open(join(self._code_dir, self._DEFAULT_VALUES_FILE), 'r') as fh:
+		with open(join(self.code_dir, self._DEFAULT_VALUES_FILE), 'r') as fh:
 			defaults = load(fp=fh, object_pairs_hook=OrderedDict)
 		for key, value in defaults:
 			setattr(self, key, value)
@@ -88,9 +89,9 @@ class BaseSettings:
 					with open(path, 'r'):
 						pass
 				except (IOError, FileNotFoundError) as err:
-					self._logger.warn(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
+					self.logger.warn(('From the environment variable "{0:s}" the path to config "{1:s}" was found, ' +
 						'but this could not be opened and "{2:s}" will be used instead. Reason: {3:s}')
-						.format(self._CONFIG_PATH_ENV, path, self._CONFIG_PATH_DEFAULT, str(err)))
+					                 .format(self._CONFIG_PATH_ENV, path, self._CONFIG_PATH_DEFAULT, str(err)))
 					return self._CONFIG_PATH_DEFAULT
 				else:
 					return path

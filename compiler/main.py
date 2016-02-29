@@ -1,4 +1,5 @@
 
+
 from time import time
 t = time()
 from itertools import chain
@@ -13,7 +14,6 @@ from compiler.log import BasicLogger, Ticker
 from compiler.loader import SourceLoader
 from compiler.section import Section
 from compiler.utils import cd, hash_str
-
 print('{1:s} imports took {0:.0f}ms'.format(1000 * (time() - t), __name__))
 
 
@@ -21,7 +21,7 @@ def render_dir(section, target_dir, *, offline=True, minify=True, allow_symlink=
 	#todo: This is just one render mode, and should become a package.
 	content = section.get()
 	packages = section.packages
-	with open(packages.get_template(), 'r') as fh:
+	with open(packages.get_template().full_path, 'r') as fh:
 		html = fh.read()
 	if exists(target_dir):
 		if remove_existing:
@@ -37,6 +37,15 @@ def render_dir(section, target_dir, *, offline=True, minify=True, allow_symlink=
 	styles = '\n\t\t'.join(style.html for style in chain(packages.yield_styles(), section.yield_styles()))
 	scripts = '\n\t\t'.join(script.html for script in chain(packages.yield_scripts(), section.yield_scripts()))
 	document = html.format(content=content, styles=styles, scripts=scripts)
+	# linking todo: linkers should be for all packages, not just the top section
+	#todo: this seems sooo wasteful, could take the majority of time on big documents
+	#todo: also is ruins any custom parsers and (without extra effort) renderers
+	linkers = tuple(packages.yield_linkers())
+	if linkers:
+		soup = packages.get_parser().parse(document)
+		for linker in linkers:
+			linker(soup)
+		document = packages.get_renderer().render(soup)
 	with open(join(target_dir, 'index.html'), 'w+') as fh:
 		fh.write(document)
 

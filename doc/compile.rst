@@ -14,7 +14,7 @@ The process
             label="section (per render)"
             graph[style=rounded,color=gray]
             subgraph cluster_in_context {
-                label="context-dependent"
+                label="determine context"
                 graph[style="rounded",color="gray"]
                 "arguments" [label="arguments"]
                 "pre-process" [label="pre-process"]
@@ -40,7 +40,7 @@ The process
                 "packages"  -> "hidden-joint" [dir=none]
                 "settings" -> "hidden-joint" [dir=none]
             }
-            "repeat" [shape=rounded,label="repeat if configuration changed"]
+            "repeat" [shape=rounded,label="redo if context changed"]
             "hidden-joint" -> "repeat"
             "repeat" -> "arguments"
             "hidden-joint" -> "find sections"
@@ -51,14 +51,15 @@ The process
             "section A" -> "section A" [arrowname=crow]
             "section B" -> "section B" [arrowname=crow]
             "find sections" -> "tags"
+            "find sections" -> "substitutions"
             "tags" -> "compile"
-            "compile" -> "substitutions"
+            "substitutions" -> "compile"
             "render" -> "post-process"
 		}
 		"merge"
 		"link"
 		"result" [peripheries=2,shape=rounded]
-		"substitutions" -> "merge" -> "link" -> "render"
+		"compile" -> "merge" -> "link" -> "render"
 		"post-process" -> "result"
         "standard arguments" -> "guess context" -> "arguments"
 	}

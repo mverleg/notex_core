@@ -1,5 +1,8 @@
 
 from inspect import signature
+from json import dumps
+
+from bs4 import NavigableString
 from copy import copy
 from os.path import dirname, basename
 from compiler.leaf import MultiThreadedLeaf
@@ -28,13 +31,15 @@ class Section:
 		self.compile_conf = compile_conf
 		self.document_conf = document_conf  # unused?
 		self.logger.info('first round for section "{0:s}"'.format(path), level=1)
-		pre_leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(), parser=LXML_Parser())
+		pre_leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(),
+			parser=LXML_Parser(None))
 		pre_soup = pre_leaf.get()
 		pre_packages = self.get_packages(pre_soup)
 		preproc = tuple(pre_packages.yield_pre_processors())
 		#todo: it'd be better if the pre-processing was iterative instead of two times? with a limit of course
 		self.logger.info('second round for section "{0:s}"'.format(path), level=1)
-		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=preproc, parser=LXML_Parser())
+		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=preproc,
+			parser=LXML_Parser(None))
 		self.soup = self.leaf.get()
 		self.packages = self.get_packages(self.soup)
 		self.styles, self.scripts, self.static = self.get_resources(self.soup)
@@ -78,14 +83,13 @@ class Section:
 			script_conf=conf['scripts'], static_conf=conf['static'], note='from section {0:s}'.format(basename(self.path))
 		)[1:]
 
-	def do_leaf(self, path, loader, logger):
-		"""
-		Construct a context-guess and go through loading, pre-processing and parsing.
-		"""
-		preproc = ()
-		parser = LXML_Parser()
-		leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(), parser=parser)
-		leaf.get()
+	# def do_leaf(self, path, loader, logger):
+	# 	"""
+	# 	Construct a context-guess and go through loading, pre-processing and parsing.
+	# 	"""
+	# 	parser = LXML_Parser()
+	# 	leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(), parser=parser)
+	# 	leaf.get()
 
 	# def final(self, path, loader, logger):
 	# 	"""
@@ -96,15 +100,47 @@ class Section:
 	# 	leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(), parser=parser)
 	# 	leaf.get()
 
+	def apply_tags_subs(self, elem, tag_map, substitutions):
+		"""
+		Recursively apply tags and substitutions to the soup.
+		"""
+		# hope this won't run into recursion limits
+		if elem.name:
+			""" It's an html tag; if it's defined in any package, apply it. """
+			if elem.name in tag_map:
+				tag = tag_map[elem.name]
+				if not getattr(tag, 'can_contain_tags', False):
+					tag_map = {}
+				if not getattr(tag, 'can_use_substitutions', False):
+					substitutions = {}
+				try:
+					self.logger.info('   apply action {0:} for tag {1:s}'.format(tag, elem.name), level=2)
+					tag(elem)
+				except TypeError as err:
+					self.logger.strict_fail('failed to apply action {0:} for tag {1:s} due to TypeError "{2:}"'.format(
+						tag, elem.name, err))
+		elif isinstance(elem, NavigableString):
+			""" It's a string, apply substitutions and stop (strings don't have children). """
+			if substitutions:
+				#todo: apply substitutions here
+				pass
+			return
+		if tag_map or substitutions:
+			""" Recurse deeper if allowed and potentially useful. """
+			for child in elem.children:
+				self.apply_tags_subs(child, tag_map, substitutions)
+
 	def get(self):
-		#todo tmp
+		#todo: configs
+		tags = dict(self.packages.yield_tags())
+		self.apply_tags_subs(self.soup, tags, {})
 		for compiler in self.packages.yield_compilers():
 			self.soup = compiler(self.soup)
 		renderer = self.packages.get_renderer()
 		return renderer.render(self.soup)
 
 	def get_template(self):
-		raise NotImplementedError('Section objects do not have templates, just styles, scripts and static resources')
+		raise NotImplementedError('Section objects do not have templates, just styles, scripts and static resources (unlike Packages)')
 
 	def _yield_resources(self, attr_name, offline, minify):
 		for resource in getattr(self, attr_name):
