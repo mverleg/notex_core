@@ -1,12 +1,11 @@
-from inspect import signature
 
+from inspect import signature
 from bs4 import NavigableString
 from copy import copy
 from os.path import dirname, basename
-
 from compiler.leaf import MultiThreadedLeaf
 from compiler.utils import hash_str, InvalidDocumentError
-from notex_pkgs.lxml_pr import LXML_Parser
+from notex_pkgs.lxml_pr.parser import LXML_Parser
 from notexp.package import Package
 from notexp.packages import PackageList
 from notexp.resource import StaticResource, StyleResource, ScriptResource, get_resources, Resource
@@ -34,11 +33,12 @@ class Section:
 			parser=LXML_Parser(None))
 		pre_soup = pre_leaf.get()
 		pre_packages = self.get_packages(pre_soup)
-		preproc = tuple(pre_packages.yield_pre_processors())
+		pre_processors = tuple(pre_packages.yield_pre_processors())
+		pre_parser = pre_packages.get_parser()
 		#todo: it'd be better if the pre-processing was iterative instead of two times? with a limit of course
 		self.logger.info('second round for section "{0:s}"'.format(path), level=1)
-		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=preproc,
-			parser=LXML_Parser(None))
+		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=pre_processors,
+			parser=pre_parser)
 		self.soup = self.leaf.get()
 		self.packages = self.get_packages(self.soup)
 		self.styles, self.scripts, self.static = self.get_resources(self.soup)
