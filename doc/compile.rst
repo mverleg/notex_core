@@ -10,7 +10,7 @@ The process
 .. graphviz::
 
 	digraph compile {
-		subgraph cluster_per_render {
+		subgraph cluster_per_section {
             label="section (per render)"
             graph[style=rounded,color=gray]
             subgraph cluster_provisional {
@@ -35,10 +35,10 @@ The process
                 "provisional arguments" -> "provisional pre-process"
                 "provisional parse" -> "provisional modules"
                 "provisional parse" -> "provisional settings"
-                "provisional compile" [label="compile"]
-                "provisional includes" -> "provisional compile" [dir=none]
-                "provisional modules"  -> "provisional compile" [dir=none]
-                "provisional settings" -> "provisional compile" [dir=none]
+                "provisional merge" [style=invis,height=0,label=""]
+                "provisional includes" -> "provisional merge" [dir=none]
+                "provisional modules"  -> "provisional merge" [dir=none]
+                "provisional settings" -> "provisional merge" [dir=none]
             }
             subgraph cluster_final {
                 label="real context"
@@ -62,22 +62,23 @@ The process
                 "final arguments" -> "final pre-process"
                 "final parse" -> "final modules"
                 "final parse" -> "final settings"
-                "final compile" [label="compile"]
-                "final includes" -> "final compile" [dir=none]
-                "final modules"  -> "final compile" [dir=none]
-                "final settings" -> "final compile" [dir=none]
+                "final merge" [style=invis,height=0,label=""]
+                "final includes" -> "final merge" [dir=none]
+                "final modules"  -> "final merge" [dir=none]
+                "final settings" -> "final merge" [dir=none]
             }
-            "provisional compile" -> "final arguments" [label="context changed"]
-            "provisional compile" -> "find renders" [label="context unchanged"]
-            "final compile" -> "find renders"
-            "render A" [peripheries=2,color=gray]
-            "render B" [peripheries=2,color=gray]
-            "find renders" -> "render A" [arrowname=crow]
-            "find renders" -> "render B" [arrowname=crow]
-            "render A" -> "render A" [arrowname=crow]
-            "render B" -> "render B" [arrowname=crow]
-            "find renders" -> "tags"
-            "tags" -> "substitutions"
+            "provisional merge" -> "final arguments" [label="context changed"]
+            "provisional merge" -> "find sections" [label="context unchanged"]
+            "final merge" -> "find sections"
+            "section A" [peripheries=2,color=gray]
+            "section B" [peripheries=2,color=gray]
+            "find sections" -> "section A" [arrowname=crow]
+            "find sections" -> "section B" [arrowname=crow]
+            "section A" -> "section A" [arrowname=crow]
+            "section B" -> "section B" [arrowname=crow]
+            "find sections" -> "tags"
+            "tags" -> "compile"
+            "compile" -> "substitutions"
             "render" -> "post-process"
 		}
 		"merge"
