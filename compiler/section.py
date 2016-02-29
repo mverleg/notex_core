@@ -1,16 +1,15 @@
-
 from inspect import signature
-from json import dumps
 
 from bs4 import NavigableString
 from copy import copy
 from os.path import dirname, basename
+
 from compiler.leaf import MultiThreadedLeaf
 from compiler.utils import hash_str, InvalidDocumentError
+from notex_pkgs.lxml_pr import LXML_Parser
 from notexp.package import Package
 from notexp.packages import PackageList
 from notexp.resource import StaticResource, StyleResource, ScriptResource, get_resources, Resource
-from parse_render_lxml.parser import LXML_Parser
 
 
 class Section:
