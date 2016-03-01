@@ -1,9 +1,14 @@
 
+<package name="lxml_pr" version=">=1.0" />
+<package name="placeholdertheme" version=">=1.0" />
+<package name="mathjax" version=">=1.0" />
+<package name="citations" version=">=1.0" />
+<package name="auto_paragraphs" />
+<resource type="static" local_path="img/*" />
+
 <config base_path="value" property="oldvalue" />
 
 <include src="inc1.html" />
-
-<package name="placeholdertheme" version=">=1.0" arg1="hello_world" />
 
 <config elephant_color="grey" property="newvalue" />
 
@@ -12,5 +17,16 @@
 <comment><p>You all suck!</p></comment>
 <p>You're all great!</p>
 <!-- comment -->
+
+<ci>double</ci>
+<ci>name</ci>
+<citation author="Henk" title="About junk and stuff">unused</citation>
+<citation author="Henk" title="About junk and stuff">name</citation>
+<citation author="Henk" title="About junk and stuff II: return of the things">double</citation>
+<cite>double</cite>
+<ci>unknown</ci>
+
+<h1>Bibliography</h1>
+<bibliography />
 
 

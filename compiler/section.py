@@ -107,17 +107,19 @@ class Section:
 		if elem.name:
 			""" It's an html tag; if it's defined in any package, apply it. """
 			if elem.name in tag_map:
-				tag = tag_map[elem.name]
-				if not getattr(tag, 'can_contain_tags', False):
-					tag_map = {}
-				if not getattr(tag, 'can_use_substitutions', False):
-					substitutions = {}
-				try:
-					self.logger.info('   apply action {0:} for tag {1:s}'.format(tag, elem.name), level=2)
-					tag(elem)
-				except TypeError as err:
-					self.logger.strict_fail('failed to apply action {0:} for tag {1:s} due to TypeError "{2:}"'.format(
-						tag, elem.name, err))
+				handler_count = len(tag_map[elem.name])
+				for nr, tag in enumerate(tag_map[elem.name]):
+					if not getattr(tag, 'can_contain_tags', False):
+						tag_map = {}
+					if not getattr(tag, 'can_use_substitutions', False):
+						substitutions = {}
+					try:
+						self.logger.info('   apply action {2:d}/{3:d} {0:} for tag {1:s}'.format(
+							tag, elem.name, nr + 1, handler_count), level=2)
+						tag(elem)
+					except TypeError as err:
+						self.logger.strict_fail('failed to apply action {0:} for tag {1:s} due to TypeError "{2:}"'.format(
+							tag, elem.name, err))
 		elif isinstance(elem, NavigableString):
 			""" It's a string, apply substitutions and stop (strings don't have children). """
 			if substitutions:
@@ -131,7 +133,7 @@ class Section:
 
 	def get(self):
 		#todo: configs
-		tags = dict(self.packages.yield_tags())
+		tags = self.packages.get_tags()
 		self.apply_tags_subs(self.soup, tags, {})
 		for compiler in self.packages.yield_compilers():
 			self.soup = compiler(self.soup)

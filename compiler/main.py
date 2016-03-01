@@ -36,6 +36,7 @@ def render_dir(section, target_dir, *, offline=True, minify=True, allow_symlink=
 		resource.copy(target_dir, allow_symlink=allow_symlink)
 	styles = '\n\t\t'.join(style.html for style in chain(packages.yield_styles(), section.yield_styles()))
 	scripts = '\n\t\t'.join(script.html for script in chain(packages.yield_scripts(), section.yield_scripts()))
+	#todo: this will break if any code generates curly brackets dynamically, right?
 	document = html.format(content=content, styles=styles, scripts=scripts)
 	# linking todo: linkers should be for all packages, not just the top section
 	#todo: this seems sooo wasteful, could take the majority of time on big documents
@@ -88,6 +89,7 @@ def do_compile(source=None, target=None, offline=True, allow_symlink=False):
 		target = target or join(getcwd(), 'my_document')
 		render_dir(section=section, target_dir=target, offline=offline,
 			allow_symlink=allow_symlink)
+		print('compiled document at file://{0:s}/index.html'.format(target))
 
 
 if __name__ == '__main__':
