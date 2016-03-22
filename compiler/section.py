@@ -2,13 +2,14 @@
 from inspect import signature
 from bs4 import NavigableString
 from copy import copy
-from os.path import dirname, basename
+from os.path import dirname, basename, realpath
 from compiler.leaf import MultiThreadedLeaf
 from compiler.utils import hash_str, InvalidDocumentError
 from notex_pkgs.lxml_pr.parser import LXML_Parser
 from notexp.package import Package
 from notexp.packages import PackageList
 from notexp.resource import StaticResource, StyleResource, ScriptResource, get_resources, Resource
+from notexp.utils import IncorrectPackageBehaviourError
 
 
 class Section:
@@ -29,22 +30,24 @@ class Section:
 		self.compile_conf = compile_conf
 		self.document_conf = document_conf  # unused?
 		self.logger.info('first round for section "{0:s}"'.format(path), level=1)
-		pre_leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=(),
-			parser=LXML_Parser(None))
+		pre_leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, compile_conf=compile_conf,
+			document_conf=document_conf, pre_processors=(), parser=LXML_Parser(None))
 		pre_soup = pre_leaf.get()
 		pre_packages = self.get_packages(pre_soup)
 		pre_processors = tuple(pre_packages.yield_pre_processors())
 		pre_parser = pre_packages.get_parser()
 		#todo: it'd be better if the pre-processing was iterative instead of two times? with a limit of course
 		self.logger.info('second round for section "{0:s}"'.format(path), level=1)
-		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, pre_processors=pre_processors,
-			parser=pre_parser)
+		self.leaf = MultiThreadedLeaf(path=path, loader=loader, logger=logger, compile_conf=compile_conf,
+			document_conf=document_conf, pre_processors=pre_processors, parser=pre_parser)
 		self.soup = self.leaf.get()
 		self.packages = self.get_packages(self.soup)
 		self.styles, self.scripts, self.static = self.get_resources(self.soup)
+		#todo: when recursing, compile_conf.only_re.match(self.path)
 
 	def get_packages(self, soup):
-		packages = []
+		packages = PackageList(packages=(), logger=self.logger, cache=self.cache, compile_conf=self.compile_conf,
+			document_conf=self.document_conf)
 		pack_tags = soup.find_all('package')
 		for pack_tag in pack_tags:
 			package_args = copy(pack_tag.attrs)
@@ -54,11 +57,10 @@ class Section:
 			version = package_args.pop('version', '==*')
 			print('  load package {0:s}{1:s} with {2:d} arguments'.format(name, version, len(package_args)))
 			pkg = Package(name=name, version=version, options=package_args, logger=self.logger, cache=self.cache,
-				compile_conf=self.compile_conf).load()
-			packages.append(pkg)
+				compile_conf=self.compile_conf, packages=packages).load()
+			packages.add_package(pkg)
 			pack_tag.extract()
-		return PackageList(packages, logger=self.logger, cache=self.cache, compile_conf=self.compile_conf,
-			document_conf=self.document_conf)
+		return packages
 
 	def get_resources(self, soup):
 		conf = {nm: [] for nm in self.resource_types.keys()}
@@ -71,8 +73,9 @@ class Section:
 				raise InvalidDocumentError('<resource> type must be one of {0:} if specified'
 					.format(', '.join(self.resource_types.keys())))
 			if resource.keys() - allowed_attrs:
-				raise InvalidDocumentError(('did not recognize these attributes given to <resource>: [{0:s}]; known arguments'
-					' are [{1:s}]').format(', '.join(resource.keys() - allowed_attrs), ', '.join(allowed_attrs)))
+				raise InvalidDocumentError(('did not recognize these attributes given to <resource>: [{0:s}]; '
+					'known arguments are [{1:s}]').format(', '.join(resource.keys() - allowed_attrs),
+					', '.join(allowed_attrs)))
 			conf[resource_type].append(resource)
 			resource_tag.extract()
 		section_name = 'section_{0:8s}'.format(hash_str(self.path))
@@ -137,6 +140,9 @@ class Section:
 		self.apply_tags_subs(self.soup, tags, {})
 		for compiler in self.packages.yield_compilers():
 			self.soup = compiler(self.soup)
+			if self.soup is None:
+				raise IncorrectPackageBehaviourError(('package compile method {0:} did not return anything, '
+					'it should return an updated document').format(compiler))
 		renderer = self.packages.get_renderer()
 		return renderer.render(self.soup)
 
@@ -203,7 +209,7 @@ class UsefulButUnusedExampleForMultiprocessing:  #todo: change to section
 			assert self._worker
 			self.html = self._get_html_from_worker()
 		if self.soup is None:
-			self.soup = self.parser.parse(self.html)
+			self.soup = self.parser.parse_partial(self.html)
 		return self.soup
 
 	@staticmethod

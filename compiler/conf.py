@@ -6,6 +6,7 @@ from os import getenv, makedirs
 from os.path import join, dirname, realpath, abspath
 from appdirs import user_config_dir
 from tempfile import gettempdir
+from re import compile
 
 
 class BaseSettings:
@@ -113,6 +114,7 @@ class CompileSettings(BaseSettings):
 		self._add_packages()
 		self._add_document_tags()
 		self._add_cmd_arguments(opts)
+		self.only_re = compile(opts.only or r'.*')  # todo: should be moved somewhere later
 
 	def start_session(self, session):
 		"""
@@ -129,7 +131,7 @@ class DocumentSettings(BaseSettings):
 	_CONFIG_PATH_DEFAULT = None
 	_CONFIG_PATH_ENV = None
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, opts, *args, **kwargs):
 		super(DocumentSettings, self).__init__(*args, **kwargs)
 		self._add_defaults()
 		self._add_packages()

@@ -22,7 +22,7 @@ class DogpileAndFileCache:
 		if dogpile is None:
 			dogpile = auto_select_backend(between_runs=True)
 		self.dogpile = dogpile
-		self.file_expiration_time = file_expiration_time or self.dogpile.expiration_time or (24 * 3600)
+		self.file_expiration_time = file_expiration_time or self.dogpile.expiration_time or (3 * 24 * 3600)
 		if cache_dir is None:
 			cache_dir = join(gettempdir(), 'dogpile_file_cache')
 		self.file_dir = cache_dir

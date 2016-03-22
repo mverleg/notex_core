@@ -4,7 +4,7 @@ from argparse import ArgumentParser, SUPPRESS
 from json import dump
 from sys import stderr, stdout
 from os import makedirs
-from os.path import dirname, exists, basename
+from os.path import dirname, exists, basename, realpath
 from pkg_resources import get_distribution, DistributionNotFound
 from compiler.server import launch_server
 
@@ -25,11 +25,16 @@ def pre_parse(args):
 		help='The main input file (you can also use --input PATH).')
 	parser.add_argument('--input', dest='input', type=str, help=SUPPRESS)
 
+	parser.add_argument('--only', dest='only', type=str, help='A regular expression, only includes and renders with matching paths will be compiled.')
+
 	parser.add_argument('-v', '--verbose', dest='verbosity', action='count', default=0, help='Show more information (can be stacked, -vv).')
 	parser.add_argument('--version', dest='show_version', action='store_true', help='Show version information and exit.')
 	parser.add_argument('-h', '--help', dest='show_help', action='store_true', help='Show this help and exit.')
 
 	opts, rest = parser.parse_known_args(args)
+
+	# this is important, without it <resource> doesn't work if it and resource are both relative
+	opts.input = realpath(opts.input)
 
 	if opts.show_help:
 		parser.print_help()

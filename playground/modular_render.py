@@ -53,7 +53,7 @@ def double_parse(input):
 		contents[id] = article.prettify()
 	for id, html in contents.items():
 		article = soup.find('article', dict(id=id))
-		article.replace_with(BeautifulSoup(html, 'lxml').html.body.article)
+		article.replace_with(BeautifulSoup(html, 'lxml').article)
 	return soup.prettify()
 
 

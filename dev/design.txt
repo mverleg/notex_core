@@ -30,7 +30,8 @@ Approach:
 - Come up with a name
 - Should everything be <xml>-like or {%different%}? Consider: markup vs proc. language? html parser vs independent language?
 - Compiler itself should be an app, so that you can have multiple installed in parallel (pip package can't do that)
--
+- Host a Q&A site in StackExchange style (https://www.quora.com/Is-there-an-open-source-alternative-to-StackOverflow-I-can-use-for-internal-Q-A)
+- 
 
 
 Ingredients core:

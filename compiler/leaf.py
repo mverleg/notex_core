@@ -1,19 +1,24 @@
 
 from threading import Thread
+from compiler.utils import InvalidDocumentError
 
 
 class Leaf:
 	"""
 	Load and parse an included or rendered document.
 	"""
-	def __init__(self, path, loader, logger, pre_processors, parser, depth=0):
-		self.soup = self._load(path=path, loader=loader, logger=logger, pre_processors=pre_processors, parser=parser, depth=depth)
+	def __init__(self, path, loader, logger, compile_conf, document_conf, pre_processors, parser, depth=0):
+		if compile_conf.only_re.match(self.path):
+			self.soup = self._load(path=path, loader=loader, logger=logger, pre_processors=pre_processors,
+				parser=parser, depth=depth)
+		else:
+			self.soup = parser.parse_partial('<!-- Leaf "{0:s}" skipped -->'.format(path))
 
 	def get(self):
 		return self.soup
 
 	@staticmethod
-	def _get_single(path, logger, loader, pre_processors, parser, depth):
+	def _get_single(path, logger, loader, compile_conf, document_conf, pre_processors, parser, depth):
 		"""
 		Load and pre-process a single source file.
 		"""
@@ -29,7 +34,8 @@ class Leaf:
 
 		""" Parse. """
 		logger.info(' {1:s}parse "{0:s}"'.format(path, ' ' * depth), level=2)
-		return parser.parse('<notex-leaf origin="{0:s}">'.format(path) + content + '</notex-leaf>')
+		# print('\n\n', parser.parse_partial ('<notex-leaf><!-- origin="{0:s}" -->'.format(path) + content + '</notex-leaf>'))
+		return parser.parse_partial('<notex-leaf origin="{0:s}">'.format(path) + content + '</notex-leaf>')
 
 	@staticmethod
 	def _depth_limit(incls, logger, depth):
@@ -49,40 +55,46 @@ class Leaf:
 		return True
 
 	@staticmethod
-	def _load(path, logger, loader, pre_processors, parser, depth):
+	def _load(path, logger, loader, compile_conf, document_conf, pre_processors, parser, depth):
 		"""
 		Load, pre-process and parse an included file (leaf) and recursively load any other leafs.
 		"""
 		""" Load & pre-process this file. """
-		soup = Leaf._get_single(path=path, logger=logger, loader=loader, pre_processors=pre_processors, parser=parser, depth=depth)
+		soup = Leaf._get_single(path=path, logger=logger, loader=loader, compile_conf=compile_conf,
+			document_conf=document_conf, pre_processors=pre_processors, parser=parser, depth=depth)
 
 		""" Handle includes. """
 		incls = soup.find_all('include')
 		if not Leaf._depth_limit(incls=incls, logger=logger, depth=depth):
 			for incl in incls:
 				if Leaf._with_src(incl=incl, logger=logger, path=path):
-					sub = Leaf(path=incl.attrs['src'], loader=loader, logger=logger, pre_processors=pre_processors,
-					           parser=parser, depth=depth + 1)
+					sub = Leaf(path=incl.attrs['src'], loader=loader, logger=logger, compile_conf=compile_conf,
+						document_conf=document_conf, pre_processors=pre_processors, parser=parser, depth=depth + 1)
 					incl.replace_with(sub.get())
 
 		""" Return soup. """
-		return soup.html.body.contents[0]
+		return soup
 
 
 class MultiThreadedLeaf:
 	"""
 	Load and parse an included or rendered document.
 	"""
-	def __init__(self, path, loader, logger, pre_processors, parser, depth=0, incl_dict=None):
+	def __init__(self, path, loader, logger, compile_conf, document_conf, pre_processors, parser, depth=0, incl_dict=None):
 		if incl_dict is None:
 			incl_dict = {}
 		self.incl_dict = incl_dict
 		self.path = path
 		self.depth = depth
-		self._worker = Thread(target=self._load_async, kwargs=dict(path=self.path, logger=logger, loader=loader,
-			pre_processors=pre_processors, parser=parser, depth=self.depth, incl_dict=incl_dict), daemon=True)
-		self._worker.start()
-		self.soup = None
+		if compile_conf.only_re.match(self.path) or depth == 0:  # todo: doesn't work, probably just remove feature
+			self._worker = Thread(target=self._load_async, kwargs=dict(path=self.path, logger=logger, loader=loader,
+				compile_conf=compile_conf, document_conf=document_conf, pre_processors=pre_processors, parser=parser,
+				depth=self.depth, incl_dict=incl_dict), daemon=True)
+			self._worker.start()
+			self.soup = None
+		else:
+			self._worker = None
+			self.soup = parser.parse_partial('<!-- Leaf "{0:s}" skipped -->'.format(self.path))
 
 	def get(self):
 		"""
@@ -108,7 +120,7 @@ class MultiThreadedLeaf:
 		return soup
 
 	@staticmethod
-	def _load_async(path, logger, loader, pre_processors, parser, depth, incl_dict):
+	def _load_async(path, logger, loader, compile_conf,	document_conf, pre_processors, parser, depth, incl_dict):
 		"""
 		Load, pre-process and parse an included file (leaf). Recursively load other leafs but store them in a dict
 		as updating the main tree concurrently might cause problems.
@@ -120,7 +132,10 @@ class MultiThreadedLeaf:
 		incl_dict[path] = None
 
 		""" Load & pre-process this file. """
-		soup = Leaf._get_single(path=path, logger=logger, loader=loader, pre_processors=pre_processors, parser=parser, depth=depth)
+		soup = Leaf._get_single(path=path, logger=logger, loader=loader, compile_conf=compile_conf,
+			document_conf=document_conf, pre_processors=pre_processors, parser=parser, depth=depth)
+		if soup is None:
+			raise InvalidDocumentError('something went wrong loading {0:s}'.format(path))
 
 		""" Handle includes. """
 		incls = soup.find_all('include')
@@ -128,12 +143,15 @@ class MultiThreadedLeaf:
 		if not Leaf._depth_limit(incls=incls, logger=logger, depth=depth):
 			for incl in incls:
 				if Leaf._with_src(incl=incl, logger=logger, path=path):
-					sub = MultiThreadedLeaf(path=incl.attrs['src'], loader=loader, logger=logger, pre_processors=pre_processors,
-					                        parser=parser, depth=depth + 1, incl_dict=incl_dict)
+					sub = MultiThreadedLeaf(path=incl.attrs['src'], loader=loader, logger=logger,
+						compile_conf=compile_conf, document_conf=document_conf, pre_processors=pre_processors,
+						parser=parser, depth=depth + 1, incl_dict=incl_dict)
+					if sub is None:
+						raise InvalidDocumentError('problem including {0:s}'.format(incl.attrs['src']))
 					subleafs.append(sub)
 
 		""" Add soup. """
-		incl_dict[path] = soup.html.body.contents[0]
+		incl_dict[path] = soup
 
 		""" Don't stop before subleafs are ready. """
 		for sub in subleafs:

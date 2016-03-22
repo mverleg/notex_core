@@ -43,7 +43,7 @@ def render_dir(section, target_dir, *, offline=True, minify=True, allow_symlink=
 	#todo: also is ruins any custom parsers and (without extra effort) renderers
 	linkers = tuple(packages.yield_linkers())
 	if linkers:
-		soup = packages.get_parser().parse(document)
+		soup = packages.get_parser().parse_document(document)
 		for linker in linkers:
 			linker(soup)
 		document = packages.get_renderer().render(soup)
@@ -61,7 +61,7 @@ def setup_singletons(opts):
 	session_hash = hash_str(opts.input)
 	compile_conf = CompileSettings(logger=logger, opts=opts, session=session_hash)
 	logger.info('load compile settings ({0:.0f}ms)'.format(tick()), level=2)
-	document_conf = DocumentSettings(logger=logger)
+	document_conf = DocumentSettings(logger=logger, opts=opts)
 	logger.info('load document settings ({0:.0f}ms)'.format(tick()), level=2)
 	cache = DogpileAndFileCache(cache_dir=join(compile_conf.TMP_DIR, 'filecache'))
 	logger.info('created cache binding ({0:.0f}ms)'.format(tick()), level=2)
