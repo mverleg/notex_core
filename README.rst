@@ -1,5 +1,5 @@
 
-Notex
+Notex: Core
 =============================
 
 This project aimed to create a document specification format which has the same aims as LaTeX, but different implementation. Some design goals:
