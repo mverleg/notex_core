@@ -20,7 +20,7 @@ Like LaTeX, it's not WYSIWYG, and it works well with SVC.
 Components
 -----------------------------
 
-* Core_ - the core notex engine that compiles documents (just infrastructure; more of the functionality should be in packages).
+* Core_ - the core notex engine that compiles documents (just infrastructure; most functionality should be in packages).
 * `Package index`_ - Package index where notex extensions are collected (own copies can be ran).
 * `Package manager`_ - Client-side package manager for notex.
 * `Package template`_ - Notex package base infrastructure (necessary for core and index).
