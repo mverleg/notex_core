@@ -8,7 +8,7 @@ This project aimed to create a document specification format which has the same 
 * More geared towards modern media (web, interactive)
 * Faster and simpler compilation than LaTeX
 * Less historical baggage
-* Designed for extensibility
+* Designed for extensibility, proper package manager
 * Separation of content and style, but with easily editable style
 
 *It is currently on hold or perhaps discontinued*.
